@@ -1,4 +1,4 @@
-const API_BASE = window.API_BASE || "https://YOUR-WORKER-SUBDOMAIN.workers.dev";
+const API_BASE = "https://communities-choice-api.<your-subdomain>.workers.dev";
 const CROSS_AREA_LABEL = "Cross-Area";
 
 function el(html){const d=document.createElement("div");d.innerHTML=html.trim();return d.firstElementChild}
