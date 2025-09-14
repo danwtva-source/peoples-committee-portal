@@ -1,6 +1,6 @@
 # Communities’ Choice Portal — GitHub Pages + Cloudflare Workers (No Firebase)
  
-This keeps your existing UI exactly the same and adds a username + `password1` login that limits each member to their own Area plus Cross-Area. Admins see everything.
+This keeps your existing UI exactly the same and adds a username + `password1` login that limits each member to their own Area plus Cross-Area. Admins see  everything.
 
 ## Files
 - `public/index.html` — your HTML with a small auth include (injected at the end).
