@@ -16,7 +16,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +25,7 @@ jobs:
         with:
           node-version: 20
 
-      # OPTIONAL: build users.json from your spreadsheet if it's present
+      # Optional: build users.json from spreadsheet if present
       - name: Build users.json from spreadsheet (optional)
         if: ${{ hashFiles('data/Replit Users Committee Members.xlsx') != '' }}
         run: |
