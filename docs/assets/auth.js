@@ -1,6 +1,6 @@
-// Front-end auth for Communities' Choice Portal
-// Sends login as x-www-form-urlencoded to avoid CORS preflight.
-// Falls back to Bearer token if third-party cookies are blocked.
+// Portal auth helper
+// - Sends login as x-www-form-urlencoded to avoid preflight
+// - Uses cookie (when allowed) or token via Authorization header
 
 const API_BASE = "https://communities-choice-api.dan-w-tva.workers.dev";
 
@@ -30,7 +30,6 @@ function ensureOverlay(){
 function showLoginOverlay(show){ const o=$("#cc-login-overlay"); if(o) o.style.display=show?"flex":"none"; }
 function setError(m){ const e=$("#cc-login-error"); if(e){ e.textContent=m||""; e.style.display=m?"block":"none"; } }
 
-// token helper (fallback when cookies blocked)
 const TOKEN_KEY="cc_token";
 const getToken=()=>sessionStorage.getItem(TOKEN_KEY)||"";
 const setToken=t=>{ if(t) sessionStorage.setItem(TOKEN_KEY,t); };
@@ -58,7 +57,6 @@ async function doLogin(e){
   if(!username||!password){ setError("Please enter username and password."); return; }
 
   try{
-    // FORM body to avoid preflight
     const body=new URLSearchParams({ username, password });
     const r=await fetch(`${API_BASE}/api/login`, {
       method:"POST",
