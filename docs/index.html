@@ -495,6 +495,29 @@
     let auth;
     let db;
     let currentUserProfile = null;
+
+// Bridge for Worker-based login (no Firebase auth)
+window.setCommitteeUser = (profile) => {
+  // profile: { username, name, role, area }
+  currentUserProfile = profile;
+
+  // Update UI header
+  const ui = document.getElementById('user-info');
+  if (ui) ui.textContent = `Welcome, ${profile.name}`;
+
+  // Toggle admin-only elements
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = (profile.role === 'admin') ? 'block' : 'none';
+  });
+
+  // Go to the right dashboard
+  const page = (profile.role === 'admin') ? 'page-admin-dashboard' : 'page-portal-dashboard';
+  if (typeof showPortalPage === 'function') {
+    showPortalPage(page);
+  }
+};
+
+
     let scoresCollectionRef;
     let taskListenerUnsubscribe = null; 
     let adminDashboardUnsubscribe = null;
@@ -1293,8 +1316,5 @@
       });
     });
   </script>
-
-  <link rel="stylesheet" href="assets/auth.css">
-  <script src="assets/auth.js"></script>
 </body>
 </html>
