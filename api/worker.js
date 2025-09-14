@@ -33,7 +33,7 @@ export default {
     const COOKIE_SECRET = env.COOKIE_SECRET || "change-me";
 
     function corsHeaders() {
-      const allow = (origin && ALLOWED_ORIGIN && origin.startsWith(ALLOWED_ORIGIN)) ? origin : (ALLOWED_ORIGIN || "*");
+      const allow = (origin && ALLOWED_ORIGIN && origin.startsWith(ALLOWED_ORIGIN)) ? origin : (ALLOWED_ORIGIN || "https://danwtva-source.github.io");
       return {
         "Access-Control-Allow-Origin": allow,
         "Access-Control-Allow-Credentials": "true",
