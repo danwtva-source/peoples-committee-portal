@@ -1,5 +1,8 @@
-// docs/assets/auth.js
-// -------------------------------------------------------------
+// Front-end auth helper for Communities' Choice Portal
+// Works with the Worker above. It injects the login overlay if missing,
+// handles login/logout, stores a token (for browsers that block 3rd-party
+// cookies) and calls window.setCommitteeUser(profile) so the page renders.
+
 // 1) Set this to YOUR Worker URL (no trailing slash)
 const API_BASE = "https://communities-choice-api.dan-w-tva.workers.dev";
 
@@ -7,7 +10,7 @@ const API_BASE = "https://communities-choice-api.dan-w-tva.workers.dev";
 const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// --- overlay creation (auto-inject if missing) -----------------------------
+// -------------------- overlay creation (auto-inject) -----------------------
 function ensureOverlay() {
   if ($("#cc-login-overlay")) return;
 
@@ -39,35 +42,49 @@ function ensureOverlay() {
   document.body.appendChild(wrapper.firstElementChild);
 }
 
-// --- overlay helpers -------------------------------------------------------
 function showLoginOverlay(show) {
   const overlay = $("#cc-login-overlay");
-  if (!overlay) return;                     // safe if not present (but we inject above)
+  if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
-
 function setError(msg) {
   const el = $("#cc-login-error");
   if (el) { el.textContent = msg || ""; el.style.display = msg ? "block" : "none"; }
 }
 
-// --- hand-off to the page's module so it renders dashboards ----------------
+// --------------------------- token helpers ---------------------------------
+const TOKEN_KEY = "cc_token";
+const getToken  = () => sessionStorage.getItem(TOKEN_KEY) || "";
+const setToken  = (t) => { if (t) sessionStorage.setItem(TOKEN_KEY, t); };
+const clearToken = () => sessionStorage.removeItem(TOKEN_KEY);
+
+function authHeaders() {
+  const headers = {};
+  const t = getToken();
+  if (t) headers["Authorization"] = `Bearer ${t}`;
+  return headers;
+}
+
+// -------------------- hand-off to the page module --------------------------
 function afterAuth(me) {
-  // keep any area filtering you already have
+  // Optional: keep your existing area filter if present
   if (window.applyAreaFilter) window.applyAreaFilter(me.area, me.role);
 
-  // critical bridge: tells the page module who is logged in
+  // IMPORTANT: tells the page who is logged in (index.html defines this)
   if (window.setCommitteeUser) window.setCommitteeUser(me);
 
   setError("");
   showLoginOverlay(false);
 }
 
-// --- API calls -------------------------------------------------------------
+// ----------------------------- API calls -----------------------------------
 async function checkSession() {
   ensureOverlay();
   try {
-    const r = await fetch(`${API_BASE}/api/me`, { credentials: "include" });
+    const r = await fetch(`${API_BASE}/api/me`, {
+      credentials: "include",
+      headers: authHeaders(),
+    });
     if (!r.ok) { showLoginOverlay(true); return; }
     const me = await r.json();
     afterAuth(me);
@@ -91,9 +108,21 @@ async function doLogin(e) {
       credentials: "include",
       body: JSON.stringify({ username, password })
     });
-    if (!r.ok) { setError(await r.text() || "Login failed."); return; }
+    if (!r.ok) {
+      const t = await r.text();
+      setError(t || "Login failed.");
+      return;
+    }
 
-    const meRes = await fetch(`${API_BASE}/api/me`, { credentials: "include" });
+    // Store token if provided (works even when third-party cookies are blocked)
+    const data = await r.clone().json().catch(() => null);
+    if (data && data.token) setToken(data.token);
+
+    // Get profile (works via cookie OR Authorization header)
+    const meRes = await fetch(`${API_BASE}/api/me`, {
+      credentials: "include",
+      headers: authHeaders(),
+    });
     if (!meRes.ok) { setError("Could not load profile."); return; }
     const me = await meRes.json();
     afterAuth(me);
@@ -104,24 +133,26 @@ async function doLogin(e) {
 
 async function doLogout(e) {
   if (e) e.preventDefault();
+  clearToken();
   try { await fetch(`${API_BASE}/api/logout`, { method: "POST", credentials: "include" }); } catch {}
   showLoginOverlay(true);
 }
 
-// --- boot ------------------------------------------------------------------
+// ------------------------------- boot --------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   ensureOverlay();
 
   const form = $("#cc-login-form");
   if (form) form.addEventListener("submit", doLogin);
 
-  // wire any logout buttons if present
+  // wire any logout buttons already in your page
   [ "#logoutBtn", "a[href='#logout']", ".nav-logout", "#logout" ].forEach(sel => {
     $$(sel).forEach(btn => btn.addEventListener("click", doLogout));
   });
 
+  // Check if we already have a valid session
   checkSession();
 });
 
-// expose small debug helper
+// Debug helper: force overlay
 window.ccShowLogin = () => { ensureOverlay(); showLoginOverlay(true); };
