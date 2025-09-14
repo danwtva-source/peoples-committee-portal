@@ -1,4 +1,27 @@
-const users = [ ...the JSON above... ];
+const users = [
+  { "username": "tvaadmin", "name": "TVA Admin", "area": "ALL", "role": "admin" },
+  { "username": "bpaynter", "name": "Boyd Paynter", "area": "Blaenavon", "role": "member" },
+  { "username": "klang", "name": "Karen Lang", "area": "Blaenavon", "role": "member" },
+  { "username": "lwhite", "name": "Louise White", "area": "Blaenavon", "role": "member" },
+  { "username": "mletch", "name": "Melanie Letch", "area": "Blaenavon", "role": "member" },
+  { "username": "nlewis", "name": "Nigel Lewis", "area": "Blaenavon", "role": "member" },
+  { "username": "scharles", "name": "Sarah J Charles", "area": "Blaenavon", "role": "member" },
+  { "username": "sdavies", "name": "Steffan Davies", "area": "Blaenavon", "role": "member" },
+  { "username": "sford", "name": "Sharon Ford", "area": "Blaenavon", "role": "member" },
+  { "username": "tgardner", "name": "Terry Gardner", "area": "Blaenavon", "role": "member" },
+  { "username": "aanderson", "name": "Alysha Anderson", "area": "Penygarn", "role": "member" },
+  { "username": "hdewar", "name": "Heather Dewar", "area": "Penygarn", "role": "member" },
+  { "username": "jbruton", "name": "John Bruton", "area": "Penygarn", "role": "member" },
+  { "username": "jcharles", "name": "Joe Charles", "area": "Penygarn", "role": "member" },
+  { "username": "lbevan", "name": "Leighton Bevan", "area": "Penygarn", "role": "member" },
+  { "username": "sbradley", "name": "Sarah Bradley", "area": "Penygarn", "role": "member" },
+  { "username": "brichardson", "name": "Bailey Richardson", "area": "ALL", "role": "admin" },
+  { "username": "dwatkins", "name": "Dan Watkins", "area": "ALL", "role": "admin" },
+  { "username": "gjenkins", "name": "Gabi Jenkins", "area": "St Cadocs", "role": "member" },
+  { "username": "mcock", "name": "Mike Cock", "area": "St Cadocs", "role": "member" },
+  { "username": "sdalby", "name": "Sonia Dalby", "area": "St Cadocs", "role": "member" },
+  { "username": "sgrudgings", "name": "Sam Grudgings", "area": "Thornhill & Upper Cwmbran", "role": "member" }
+];
 
 export default {
   async fetch(request, env) {
