@@ -1,0 +1,56 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler CLI
+        run: npm i -g wrangler@3
+
+      - name: Install deps & (optionally) build users.json from XLSX
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci || npm i
+          fi
+          if [ -f "data/Replit Users Committee Members.xlsx" ]; then
+            echo "Converting XLSX to api/users.json..."
+            npm run users:build
+          else
+            echo "No XLSX found; using existing api/users.json"
+          fi
+
+      - name: (Optional) Set COOKIE_SECRET in Worker
+        if: ${{ secrets.WORKER_COOKIE_SECRET != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "${{ secrets.WORKER_COOKIE_SECRET }}" | wrangler secret put COOKIE_SECRET --account-id "$CLOUDFLARE_ACCOUNT_ID" --yes
+
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ALLOWED_ORIGIN: ${{ vars.ALLOWED_ORIGIN }}
+        run: |
+          wrangler deploy --account-id "$CLOUDFLARE_ACCOUNT_ID" --var ALLOWED_ORIGIN="$ALLOWED_ORIGIN"
+
+      - name: Show Worker deployments (for URL)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          wrangler deployments list --account-id "$CLOUDFLARE_ACCOUNT_ID" || true
