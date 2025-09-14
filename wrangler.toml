@@ -1,0 +1,10 @@
+name = "communities-choice-api"
+main = "api/worker.js"
+compatibility_date = "2025-09-14"
+
+[vars]
+# Set this to your GitHub Pages origin, e.g. "https://<user>.github.io"
+ALLOWED_ORIGIN = ""
+
+# Generate a long random value and add it as a secret via:
+# wrangler secret put COOKIE_SECRET

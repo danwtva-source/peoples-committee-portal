@@ -1,0 +1,15 @@
+{
+  "name": "communities-choice-portal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "users:build": "node tools/xlsx-to-users-json.mjs",
+    "serve": "npx http-server public -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
