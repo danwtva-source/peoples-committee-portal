@@ -1,4 +1,4 @@
-import users from './users.json';
+const users = [ ...the JSON above... ];
 
 export default {
   async fetch(request, env) {
