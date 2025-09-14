@@ -25,13 +25,6 @@ jobs:
         with:
           node-version: 20
 
-      # Optional: build users.json from spreadsheet if present
-      - name: Build users.json from spreadsheet (optional)
-        if: ${{ hashFiles('data/Replit Users Committee Members.xlsx') != '' }}
-        run: |
-          npm i xlsx@0.18.5
-          node tools/xlsx-to-users-json.mjs "data/Replit Users Committee Members.xlsx" > api/users.json
-
       - name: Install Wrangler
         run: npm i -g wrangler@3
 
