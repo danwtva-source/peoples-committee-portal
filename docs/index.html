@@ -13,6 +13,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;700&display=swap" rel="stylesheet">
   
+  <!-- Chart.js for Admin Dashboard Visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
     /* ------------------- */
     /* Global & Font Setup */
@@ -138,7 +141,7 @@
               <img src="https://d41chssnpqdne.cloudfront.net/user_upload_by_module/chat_bot/files/970258/XU0aJN5kLsT4Hiln.png?Expires=1758359968&Signature=m4JUd4i7qveZkQSjPA3DE3SX7em-IkAR4kLSYZF6Cli6Wmqncgv9re65ERZTY4t00ObtvWHltRUvrO7EWUhwu5ezO0tW7qXQyOhp~7iUaSYKADQOnrJx9kzCYuZNhn289oiztKsQLYlaUDziLIGZEGHWZ3998hKXzR2gVQJMcG1GJpjeUxouVTNSR5Ia1tO~xcVcdIncJU5IM-tC7wt9d-IJUvkmnowjtq6~qszjtVaddTN5Wti-XfEzJtUgfU3lZlj9vd07DqmxwLlna1TM9wajPnbEuyT3i0oHR9OJRbOP09h0W4RYRarVNiJ5YhwVqO~0P2Fj6tpThtXF0o-klQ__&Key-Pair-Id=K3USGZIKWMDCSX" alt="Logo" class="h-12 rounded-lg">
               <h1 class="text-xl font-bold text-purple-700 dynapuff hidden sm:block">Communities' Choice</h1>
           </div>
-           <nav id="portal-nav" class="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-base flex-wrap justify-end">
+           <nav id="portal-nav" class="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-base flex-wrap justify-end" style="display: none;">
                 <div id="user-info" class="text-sm text-purple-800 font-semibold mr-4"></div>
                 <button id="nav-portal-home" data-portal-page="page-portal-dashboard" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Portal Home</button>
                 <button data-portal-page="page-scoring" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Scoring Matrix</button>
@@ -164,6 +167,18 @@
                 Oversight of all People's Committee scoring activities.
               </p>
             </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-purple-800 dynapuff mb-4">Scoring Progress by Area</h3>
+                    <canvas id="progress-chart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-purple-800 dynapuff mb-4">Overall Summary</h3>
+                    <div id="overall-summary-stats" class="space-y-3"></div>
+                </div>
+            </div>
+
             <div class="mb-6 bg-white p-4 rounded-xl shadow-md">
                 <label for="admin-area-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Area:</label>
                 <select id="admin-area-filter" class="w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
@@ -245,11 +260,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-200">
                     <div>
                         <label for="scoring-ref" class="block text-sm font-medium text-gray-700 mb-1">PB Reference</label>
-                        <select id="pbRefSelect" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
+                        <select id="scoring-ref" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
                     </div>
                     <div>
                         <label for="scoring-applicant" class="block text-sm font-medium text-gray-700 mb-1">Applicant</label>
-                        <select id="applicantSelect" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
+                        <select id="scoring-applicant" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
                     </div>
                     <div>
                         <label for="scoring-area" class="block text-sm font-medium text-gray-700 mb-1">Area</label>
@@ -259,7 +274,7 @@
 
                  <!-- View PDF Button -->
                 <div class="mb-6 text-center">
-                    <button id="viewPdfBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>View Application PDF</button>
+                    <button id="view-pdf-button" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>View Application PDF</button>
                 </div>
 
 
@@ -274,7 +289,7 @@
                                 <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dynapuff" style="min-width: 250px;">Notes & Justification</th>
                             </tr>
                         </thead>
-                        <tbody id="matrixContainer" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tbody id="scoring-matrix-body" class="bg-white divide-y divide-gray-200"></tbody>
                     </table>
                 </div>
 
@@ -282,7 +297,7 @@
                 <div class="mt-6 pt-6 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center space-x-4">
                         <h3 class="text-lg font-bold text-gray-800 dynapuff">Total Score:</h3>
-                        <span id="totalScore" class="text-2xl font-bold text-purple-700">0 / 100</span>
+                        <span id="scoring-total" class="text-2xl font-bold text-purple-700">0 / 100</span>
                     </div>
                      <div class="flex items-center space-x-4">
                         <h3 class="text-lg font-bold text-gray-800 dynapuff">Outcome:</h3>
@@ -462,16 +477,43 @@
             </div>
         </div>
     </div>
+
+    <!-- Score Edit Modal -->
+    <div id="score-edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[1004] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                <h2 id="score-edit-modal-title" class="text-2xl font-bold text-purple-700 dynapuff">Edit Score</h2>
+                <button id="close-score-edit-modal-btn" class="text-gray-400 hover:text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto pr-4 flex-grow">
+                <input type="hidden" id="edit-score-doc-id">
+                <div id="score-edit-modal-body" class="overflow-x-auto">
+                    <!-- Scoring table for editing will be injected here -->
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-end gap-4">
+                <div class="flex items-center space-x-4 mr-auto">
+                    <h3 class="text-lg font-bold text-gray-800 dynapuff">New Total:</h3>
+                    <span id="edit-scoring-total" class="text-2xl font-bold text-purple-700">0 / 100</span>
+                </div>
+                <button id="score-edit-modal-cancel" class="py-2 px-6 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors dynapuff">Cancel</button>
+                <button id="score-edit-modal-save" class="py-2 px-6 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors dynapuff">Save Changes</button>
+            </div>
+        </div>
+    </div>
   </main>
   
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK & App Logic -->
   <script type="module">
     // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { 
         getAuth, 
         onAuthStateChanged, 
-        signOut 
+        signOut,
+        signInWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
         getFirestore, 
@@ -483,7 +525,8 @@
         collection, 
         onSnapshot, 
         query, 
-        where, getDocs 
+        where, getDocs,
+        enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
     // ---------------
@@ -495,27 +538,8 @@
     let auth;
     let db;
     let currentUserProfile = null;
-
-// Bridge for Worker-based login (no Firebase auth)
-window.setCommitteeUser = (profile) => {
-  // profile: { username, name, role, area }
-  currentUserProfile = profile;
-
-  // Update UI header
-  const ui = document.getElementById('user-info');
-  if (ui) ui.textContent = `Welcome, ${profile.name}`;
-
-  // Toggle admin-only elements
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = (profile.role === 'admin') ? 'block' : 'none';
-  });
-
-  // Go to the right dashboard
-  const page = (profile.role === 'admin') ? 'page-admin-dashboard' : 'page-portal-dashboard';
-  if (typeof showPortalPage === 'function') {
-    showPortalPage(page);
-  }
-};
+    let progressChart = null; // To hold the chart instance
+    let currentEditScoreData = {};
 
 
     let scoresCollectionRef;
@@ -523,6 +547,45 @@ window.setCommitteeUser = (profile) => {
     let adminDashboardUnsubscribe = null;
     let masterTrackerUnsubscribe = null;
     let confirmationCallback = null;
+    
+    // ---------------
+    // LOGIN OVERLAY UI (from auth.js)
+    // ---------------
+    function ensureOverlay(){
+      if (document.getElementById("cc-login-overlay")) return;
+      const w=document.createElement("div");
+      w.innerHTML=`
+      <div id="cc-login-overlay" style="display:none;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;">
+        <div style="background:#fff;border-radius:16px;width:min(520px,92vw);padding:24px 24px 28px;box-shadow:0 30px 60px rgba(0,0,0,.25);">
+          <h2 style="margin:0 0 8px;font-family:system-ui,sans-serif">Committee Portal Login</h2>
+          <p style="margin:0 18px 18px 0;color:#555">Please sign in with your username and password.</p>
+          <form id="cc-login-form">
+            <label style="display:block;font-weight:600;margin:10px 0 6px;">Username</label>
+            <input id="cc-username" autocomplete="username" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+            <label style="display:block;font-weight:600;margin:16px 0 6px;">Password</label>
+            <input id="cc-password" type="password" autocomplete="current-password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+            <div id="cc-login-error" style="color:#c00;margin:8px 0 0;display:none"></div>
+            <button type="submit" style="margin-top:14px;width:100%;padding:12px 14px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;cursor:pointer">Sign in</button>
+          </form>
+        </div>
+      </div>`;
+      document.body.appendChild(w.firstElementChild);
+      document.getElementById("cc-login-form")?.addEventListener("submit", doLogin);
+    }
+
+    function showLoginOverlay(show){ 
+        ensureOverlay();
+        const o=document.getElementById("cc-login-overlay"); 
+        if(o) o.style.display=show?"flex":"none"; 
+    }
+
+    function setLoginError(m){ 
+        const e=document.getElementById("cc-login-error"); 
+        if(e){ 
+            e.textContent=m||""; 
+            e.style.display=m?"block":"none"; 
+        } 
+    }
 
     // ---------------
     // MODAL & UI HELPERS
@@ -538,6 +601,9 @@ window.setCommitteeUser = (profile) => {
     }
 
     function showConfirmationModal(message, onConfirmCallback) {
+        document.getElementById('confirmation-modal-title').textContent = "Are you sure?";
+        document.getElementById('confirmation-modal-cancel').style.display = 'inline-flex';
+        document.getElementById('confirmation-modal-confirm').textContent = "Yes, I'm sure";
         document.getElementById('confirmation-modal-message').textContent = message;
         confirmationCallback = onConfirmCallback;
         document.getElementById('confirmation-modal').classList.remove('hidden');
@@ -561,8 +627,9 @@ window.setCommitteeUser = (profile) => {
          showConfirmationModal(message, null);
          document.getElementById('confirmation-modal-title').textContent = title;
          document.getElementById('confirmation-modal-cancel').style.display = 'none';
-         document.getElementById('confirmation-modal-confirm').textContent = "OK";
-         document.getElementById('confirmation-modal-confirm').onclick = hideConfirmationModal;
+         const confirmBtn = document.getElementById('confirmation-modal-confirm');
+         confirmBtn.textContent = "OK";
+         confirmBtn.onclick = hideConfirmationModal;
     }
 
 
@@ -570,10 +637,7 @@ window.setCommitteeUser = (profile) => {
     // PAGE NAVIGATION & AUTH
     // ---------------
      function showPortalPage(pageId) {
-        if (!currentUserProfile) {
-            // This is a safeguard, but auth state should handle redirects.
-            return;
-        }
+        if (!currentUserProfile) return;
 
         document.querySelectorAll('.portal-page').forEach(p => p.style.display = 'none');
         const newPage = document.getElementById(pageId);
@@ -594,6 +658,31 @@ window.setCommitteeUser = (profile) => {
         window.scrollTo(0, 0);
     }
     
+    async function doLogin(e) {
+        e.preventDefault(); 
+        setLoginError("");
+        const username = document.getElementById("cc-username")?.value?.trim() || "";
+        const password = document.getElementById("cc-password")?.value || "";
+        if (!username || !password) {
+            setLoginError("Please enter username and password.");
+            return;
+        }
+
+        try {
+            // Assume usernames are like 'dwilliams' and Firebase emails are 'dwilliams@users.local'
+            const email = `${username}@users.local`;
+            await signInWithEmailAndPassword(auth, email, password);
+            // onAuthStateChanged will handle the rest
+        } catch (error) {
+            console.error("Firebase login failed:", error.code, error.message);
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                setLoginError("Invalid username or password.");
+            } else {
+                setLoginError("An error occurred during login.");
+            }
+        }
+    }
+    
     async function logout() {
         if (taskListenerUnsubscribe) taskListenerUnsubscribe();
         if (adminDashboardUnsubscribe) adminDashboardUnsubscribe();
@@ -603,11 +692,16 @@ window.setCommitteeUser = (profile) => {
         masterTrackerUnsubscribe = null;
         
         await signOut(auth);
+        // onAuthStateChanged will show the login overlay
     }
 
     async function handleAuthState(user) {
         if (user) {
             try {
+                // User is signed in, hide login and fetch profile
+                showLoginOverlay(false);
+                setLoginError("");
+
                 const uname = (user.email || '').replace('@users.local','');
                 
                 const cmRef = collection(db, 'committeeMembers');
@@ -618,7 +712,7 @@ window.setCommitteeUser = (profile) => {
                 if (!snap.empty) {
                     profileDoc = snap.docs[0];
                 } else {
-                    console.log(`Username lookup failed for '${uname}'. Trying UID fallback: ${user.uid}`);
+                    console.warn(`Username lookup failed for '${uname}'. Trying UID fallback: ${user.uid}`);
                     const byUidRef = doc(db, 'committeeMembers', user.uid);
                     const byUidSnap = await getDoc(byUidRef);
                     if (byUidSnap.exists()) {
@@ -629,28 +723,29 @@ window.setCommitteeUser = (profile) => {
                 if (profileDoc) {
                     currentUserProfile = profileDoc.data();
                     document.getElementById('user-info').textContent = `Welcome, ${currentUserProfile.name}`;
+                    document.getElementById('portal-nav').style.display = 'flex';
 
                     document.querySelectorAll('.admin-only').forEach(el => {
-                        el.style.display = currentUserProfile.role === 'admin' ? 'block' : 'none';
+                        el.style.display = currentUserProfile.role === 'admin' ? 'inline-flex' : 'none';
                     });
 
                     showPortalPage(currentUserProfile.role === 'admin' ? 'page-admin-dashboard' : 'page-portal-dashboard');
                 } else {
                     console.error("Authenticated but no profile found for", uname, user.uid);
-                    showMessage("Login was successful, but we couldn't load your profile. Please contact an administrator.", "Profile Error");
+                    showMessage("Login successful, but profile not found. Contact administrator.", "Profile Error");
                     await logout();
                 }
             } catch (err) {
                 console.error("Error fetching profile:", err);
-                showMessage("Login was successful, but there was an error fetching your user profile. This is likely due to Firestore Security Rules or a missing index. Please contact an administrator.", "Profile Error");
+                showMessage("Error fetching user profile. Check Firestore rules or contact administrator.", "Profile Error");
                 await logout();
             }
         } else {
-            // User is not logged in, redirect to the public login page.
-            if (!sessionStorage.getItem('authRedirect')) {
-                 sessionStorage.setItem('authRedirect', 'true');
-                 window.location.href = './index.html';
-            }
+            // User is not logged in, show the login overlay.
+            currentUserProfile = null;
+            document.querySelectorAll('.portal-page').forEach(p => p.style.display = 'none');
+            document.getElementById('portal-nav').style.display = 'none';
+            showLoginOverlay(true);
         }
     }
 
@@ -714,15 +809,6 @@ window.setCommitteeUser = (profile) => {
     function initializeScoringMatrix() {
         if (!currentUserProfile) return;
         updateMemberAndView();
-        
-        document.getElementById('scoring-ref').addEventListener('change', (e) => handleAppSelection(e.target.value));
-        document.getElementById('scoring-applicant').addEventListener('change', (e) => handleAppSelection(e.target.value));
-        document.getElementById('scoring-threshold').addEventListener('input', updateTotalsAndOutcome);
-        
-        document.getElementById('scoring-post-final').addEventListener('click', postFinalScores);
-        document.getElementById('scoring-export-csv').addEventListener('click', exportMasterTrackerToCSV);
-        document.getElementById('scoring-clear').addEventListener('click', clearCurrentForm);
-        document.getElementById('view-pdf-button').addEventListener('click', openPdfViewerForCurrentApp);
     }
     
     function updateMemberAndView() {
@@ -770,8 +856,13 @@ window.setCommitteeUser = (profile) => {
         applicantSelect.innerHTML = '<option value="">Select Applicant...</option>';
         apps.forEach(app => applicantSelect.add(new Option(app.applicant.trim(), app.ref)));
         
-        refSelect.value = currentRef; 
-        applicantSelect.value = currentRef;
+        if (apps.some(app => app.ref === currentRef)) {
+            refSelect.value = currentRef; 
+            applicantSelect.value = currentRef;
+        } else {
+            refSelect.value = '';
+            applicantSelect.value = '';
+        }
     }
 
     async function handleAppSelection(ref) {
@@ -820,19 +911,24 @@ window.setCommitteeUser = (profile) => {
             btn.classList.toggle('bg-purple-200', btn.dataset.ref === ref);
         });
 
-        const pdfUrl = app.pdfUrl;
-        displayContainer.innerHTML = `
-             <div class="w-full p-2 bg-gray-100 rounded-t-lg border-b">
-                <h3 class="font-bold text-gray-800">${app.applicant} (${app.ref})</h3>
-             </div>
-             <iframe src="${pdfUrl}" class="w-full h-full" title="PDF viewer for ${app.applicant}"></iframe>
-        `;
+        const pdfUrl = app ? app.pdfUrl : '';
+        if (app) {
+            displayContainer.innerHTML = `
+                <div class="w-full p-2 bg-gray-100 rounded-t-lg border-b">
+                    <h3 class="font-bold text-gray-800">${app.applicant} (${app.ref})</h3>
+                </div>
+                <iframe src="${pdfUrl}" class="w-full h-full" title="PDF viewer for ${app.applicant}"></iframe>
+            `;
+        } else {
+            displayContainer.innerHTML = `<p>Application not found.</p>`;
+        }
     }
 
     function openPdfViewerForCurrentApp() {
         const ref = document.getElementById('scoring-ref').value;
         if (!ref) return;
         const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === ref);
+        if (!app) return;
         
         const viewer = document.getElementById('pdf-viewer-window');
         const title = document.getElementById('pdf-viewer-title');
@@ -942,7 +1038,7 @@ window.setCommitteeUser = (profile) => {
         
         container.innerHTML = tasksHtml;
         
-        const progress = (completedCount / memberApps.length) * 100;
+        const progress = memberApps.length > 0 ? (completedCount / memberApps.length) * 100 : 0;
         if (progress === 100 && memberApps.length > 0) {
             summaryContainer.innerHTML = `<div class="text-center p-4 bg-teal-100 text-teal-800 rounded-lg mt-4 font-bold">🎉 All applications scored!</div>`;
         } else {
@@ -1001,7 +1097,14 @@ window.setCommitteeUser = (profile) => {
                         <span class="font-semibold text-gray-700">${s.scorerName}</span>
                         <span class="font-bold text-purple-700 ml-4">${s.totalScore} / 100</span>
                     </div>
-                    <button data-delete-id="${s.id}" class="delete-score-btn text-red-500 hover:text-red-700 p-1 rounded-full transition-colors" title="Delete this score"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    <div class="flex items-center">
+                        <button data-edit-id="${s.id}" class="edit-score-btn text-blue-500 hover:text-blue-700 p-1 rounded-full transition-colors" title="Edit this score">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button data-delete-id="${s.id}" class="delete-score-btn text-red-500 hover:text-red-700 p-1 rounded-full transition-colors" title="Delete this score">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
                 </div>
             `).join('');
 
@@ -1013,37 +1116,114 @@ window.setCommitteeUser = (profile) => {
 
     function initializeAdminDashboard() {
         const filterSelect = document.getElementById('admin-area-filter');
-        const render = (allScores) => {
-            if (!db) return; // Guard against premature rendering
-            const committeeMembersCollectionRef = collection(db, 'committeeMembers');
-            const q = query(committeeMembersCollectionRef, where("role", "==", "member"));
+        let allScoresCache = [];
+        let allMembersCache = [];
+
+        const render = () => {
+            if (!db) return;
             
-            onSnapshot(q, (snapshot) => {
-                let committeeMembers = [];
-                snapshot.forEach(doc => committeeMembers.push(doc.data()));
-                
-                if (filterSelect.value !== 'All') {
-                    committeeMembers = committeeMembers.filter(m => m.area === filterSelect.value);
-                }
-                renderAdminDashboard(committeeMembers, allScores);
-            });
+            let committeeMembers = allMembersCache;
+            if (filterSelect.value !== 'All') {
+                committeeMembers = committeeMembers.filter(m => m.area === filterSelect.value);
+            }
+            renderAdminDashboard(committeeMembers, allScoresCache);
+            renderAdminChartsAndSummary(committeeMembers, allScoresCache);
         };
+
+        const committeeMembersCollectionRef = collection(db, 'committeeMembers');
+        getDocs(query(committeeMembersCollectionRef, where("role", "==", "member"))).then(snapshot => {
+             snapshot.forEach(doc => allMembersCache.push(doc.data()));
+             render();
+        });
 
         if (adminDashboardUnsubscribe) adminDashboardUnsubscribe();
         adminDashboardUnsubscribe = onSnapshot(scoresCollectionRef, (snapshot) => {
-            const allScores = [];
-            snapshot.forEach(doc => allScores.push(doc.data()));
-            render(allScores);
+            allScoresCache = [];
+            snapshot.forEach(doc => allScoresCache.push(doc.data()));
+            render();
         });
 
-        filterSelect.addEventListener('change', () => {
-             if (adminDashboardUnsubscribe) adminDashboardUnsubscribe();
-             adminDashboardUnsubscribe = onSnapshot(scoresCollectionRef, (snapshot) => {
-                const allScores = [];
-                snapshot.forEach(doc => allScores.push(doc.data()));
-                render(allScores);
-             });
+        filterSelect.addEventListener('change', render);
+    }
+    
+    function renderAdminChartsAndSummary(committeeMembers, allScores) {
+        const areas = ["Blaenavon", "Thornhill & Upper Cwmbran", "Trevethin, Penygarn & St. Cadocs"];
+        const areaData = {
+            labels: areas,
+            datasets: [{
+                label: 'Completed',
+                data: [],
+                backgroundColor: 'rgba(20, 184, 166, 0.6)', // teal-500
+                borderColor: 'rgba(13, 148, 136, 1)', // teal-600
+                borderWidth: 1
+            }, {
+                label: 'Outstanding',
+                data: [],
+                backgroundColor: 'rgba(244, 63, 94, 0.6)', // rose-500
+                borderColor: 'rgba(225, 29, 72, 1)', // rose-600
+                borderWidth: 1
+            }]
+        };
+        
+        let totalAppsToScore = 0;
+        let totalScoresCompleted = 0;
+
+        areas.forEach(area => {
+            const membersInArea = committeeMembers.filter(m => m.area === area);
+            const appsForArea = SCORING_DATA.APPLICATIONS.filter(app => app.area === area || app.area === 'Cross-Area Application');
+            
+            let totalPossibleScoresInArea = membersInArea.length * appsForArea.length;
+            let completedScoresInArea = 0;
+
+            membersInArea.forEach(member => {
+                appsForArea.forEach(app => {
+                    if (allScores.some(s => s.scorerName === member.name && s.ref === app.ref && s.isFinal)) {
+                        completedScoresInArea++;
+                    }
+                });
+            });
+
+            totalAppsToScore += totalPossibleScoresInArea;
+            totalScoresCompleted += completedScoresInArea;
+
+            areaData.datasets[0].data.push(completedScoresInArea); // Completed
+            areaData.datasets[1].data.push(totalPossibleScoresInArea - completedScoresInArea); // Outstanding
         });
+
+        const ctx = document.getElementById('progress-chart').getContext('2d');
+        if (progressChart) {
+            progressChart.destroy();
+        }
+        progressChart = new Chart(ctx, {
+            type: 'bar',
+            data: areaData,
+            options: {
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                responsive: true,
+                plugins: {
+                    title: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+            }
+        });
+
+        // Render summary stats
+        const summaryContainer = document.getElementById('overall-summary-stats');
+        const overallCompletion = totalAppsToScore > 0 ? ((totalScoresCompleted / totalAppsToScore) * 100).toFixed(1) : 0;
+        summaryContainer.innerHTML = `
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Total Members Scoring:</span><span class="font-bold text-purple-700">${committeeMembers.length}</span></div>
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Total Scoring Tasks:</span><span class="font-bold text-purple-700">${totalAppsToScore}</span></div>
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Completed Scores:</span><span class="font-bold text-teal-600">${totalScoresCompleted}</span></div>
+            <div class="mt-4">
+                <p class="text-sm font-semibold text-gray-700 text-center">Overall Completion: ${overallCompletion}%</p>
+                <div class="w-full bg-gray-200 rounded-full h-4 mt-1">
+                    <div class="bg-teal-600 h-4 rounded-full text-white text-xs flex items-center justify-center" style="width: ${overallCompletion}%">${overallCompletion > 10 ? overallCompletion + '%' : ''}</div>
+                </div>
+            </div>
+        `;
     }
 
     function renderAdminDashboard(committeeMembers, allScores) {
@@ -1078,7 +1258,7 @@ window.setCommitteeUser = (profile) => {
         finalizedMessage.classList.add('hidden');
         document.getElementById('view-pdf-button').disabled = !ref;
 
-        if (!ref || !currentUserProfile) {
+        if (!ref || !currentUserProfile || !auth.currentUser) {
             currentScoringState = {};
             renderScoringMatrix([]);
             updateTotalsAndOutcome();
@@ -1246,7 +1426,143 @@ window.setCommitteeUser = (profile) => {
     }
     
     function exportMasterTrackerToCSV() {
-        showMessage("Export functionality to be implemented using Firestore data.", "Info");
+        if (currentUserProfile?.role !== 'admin') return;
+
+        getDocs(scoresCollectionRef).then(snapshot => {
+            const allScores = [];
+            snapshot.forEach(doc => allScores.push(doc.data()));
+            
+            if (allScores.length === 0) {
+                showMessage("No scores available to export.", "Info");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Scorer,Reference,Applicant,Area,Total Score,Is Final,Timestamp," + SCORING_DATA.CRITERIA_TEMPLATE.map(c => `"${c.name} Score","${c.name} Notes"`).join(',') + "\r\n";
+
+            allScores.forEach(score => {
+                const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === score.ref) || {};
+                let row = [
+                    `"${score.scorerName}"`,
+                    `"${score.ref}"`,
+                    `"${app.applicant || 'N/A'}"`,
+                    `"${app.area || 'N/A'}"`,
+                    score.totalScore || 0,
+                    score.isFinal,
+                    `"${score.timestamp || ''}"`
+                ];
+
+                SCORING_DATA.CRITERIA_TEMPLATE.forEach(template => {
+                    const criterion = score.criteria.find(c => c.id === template.id) || {};
+                    row.push(criterion.score ?? 0);
+                    row.push(`"${(criterion.notes || '').replace(/"/g, '""')}"`);
+                });
+
+                csvContent += row.join(',') + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "master_scores.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // Admin Score Editing Functions
+    function openScoreEditModal(docId) {
+        const docRef = doc(scoresCollectionRef, docId);
+        getDoc(docRef).then(docSnap => {
+            if (docSnap.exists()) {
+                currentEditScoreData = { id: docSnap.id, ...docSnap.data() };
+                const modalBody = document.getElementById('score-edit-modal-body');
+                const title = document.getElementById('score-edit-modal-title');
+                
+                const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === currentEditScoreData.ref);
+                title.textContent = `Edit Score for ${app.applicant} by ${currentEditScoreData.scorerName}`;
+                document.getElementById('edit-score-doc-id').value = docId;
+
+                const criteriaHtml = currentEditScoreData.criteria.map(c => {
+                    const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === c.id) || {};
+                    return `
+                    <tr>
+                        <td class="font-bold text-gray-800 p-2">${template.name}</td>
+                        <td class="p-2"><div class="flex items-center space-x-2"><input type="range" min="0" max="3" value="${c.score || 0}" class="score-slider w-full" data-id="${c.id}"><span class="font-bold text-purple-700 text-lg w-4 text-center">${c.score || 0}</span></div></td>
+                        <td class="p-2"><textarea class="w-full p-2 border border-gray-300 rounded-md" rows="1" data-id="${c.id}">${c.notes || ''}</textarea></td>
+                    </tr>
+                    `;
+                }).join('');
+                
+                modalBody.innerHTML = `
+                    <table class="min-w-full">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="p-2">Criterion</th><th class="p-2" style="min-width: 150px;">Score</th><th class="p-2" style="min-width: 250px;">Notes</th></tr></thead>
+                        <tbody>${criteriaHtml}</tbody>
+                    </table>
+                `;
+
+                updateEditScoreTotals();
+                document.getElementById('score-edit-modal').classList.remove('hidden');
+            } else {
+                showMessage("Could not find the score to edit.", "Error");
+            }
+        });
+    }
+
+    function updateEditScoreTotals() {
+        const modalBody = document.getElementById('score-edit-modal-body');
+        const sliders = modalBody.querySelectorAll('input.score-slider');
+        
+        const criteriaForCalc = Array.from(sliders).map(slider => {
+            const id = slider.dataset.id;
+            const score = parseInt(slider.value, 10);
+            const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === id);
+            return { score, weight: template.weight };
+        });
+
+        const totalScore = criteriaForCalc.reduce((acc, c) => acc + ((c.score || 0) / 3) * c.weight, 0);
+        const finalScore = Math.round(totalScore);
+        document.getElementById('edit-scoring-total').textContent = `${finalScore} / 100`;
+    }
+
+    async function saveEditedScore() {
+        const docId = document.getElementById('edit-score-doc-id').value;
+        if (!docId) return;
+
+        const docRef = doc(scoresCollectionRef, docId);
+        const modalBody = document.getElementById('score-edit-modal-body');
+        const sliders = modalBody.querySelectorAll('input.score-slider');
+        const textareas = modalBody.querySelectorAll('textarea');
+
+        const newCriteria = Array.from(sliders).map(slider => {
+            const id = slider.dataset.id;
+            const score = parseInt(slider.value, 10);
+            const notes = Array.from(textareas).find(t => t.dataset.id === id).value;
+            return { id, score, notes };
+        });
+
+        const totalScore = Math.round(newCriteria.reduce((acc, c) => {
+            const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === c.id);
+            return acc + ((c.score || 0) / 3) * template.weight;
+        }, 0));
+
+        try {
+            await setDoc(docRef, { 
+                criteria: newCriteria, 
+                totalScore: totalScore 
+            }, { merge: true });
+            
+            closeScoreEditModal();
+            showMessage("Score updated successfully!", "Success");
+        } catch (error) {
+            console.error("Error updating score:", error);
+            showMessage("Failed to update score. See console for details.", "Error");
+        }
+    }
+
+    function closeScoreEditModal() {
+        document.getElementById('score-edit-modal').classList.add('hidden');
     }
 
     // ----------------
@@ -1268,6 +1584,16 @@ window.setCommitteeUser = (profile) => {
       db = getFirestore(app);
       setLogLevel('debug');
       
+      try {
+        await enableIndexedDbPersistence(db);
+      } catch (err) {
+        if (err.code == 'failed-precondition') {
+            console.warn("Firestore persistence failed, likely due to multiple open tabs.");
+        } else if (err.code == 'unimplemented') {
+            console.warn("Firestore persistence is not available in this browser.");
+        }
+      }
+
       scoresCollectionRef = collection(db, 'scores'); 
 
       onAuthStateChanged(auth, handleAuthState);
@@ -1287,9 +1613,19 @@ window.setCommitteeUser = (profile) => {
           if (target.closest('.delete-score-btn[data-delete-id]')) {
               deleteScore(target.closest('.delete-score-btn').dataset.deleteId);
           }
+          if (target.closest('.edit-score-btn[data-edit-id]')) {
+              openScoreEditModal(target.closest('.edit-score-btn').dataset.editId);
+          }
       });
       
       document.getElementById('logout-button').addEventListener('click', logout);
+      document.getElementById('scoring-ref').addEventListener('change', (e) => handleAppSelection(e.target.value));
+      document.getElementById('scoring-applicant').addEventListener('change', (e) => handleAppSelection(e.target.value));
+      document.getElementById('scoring-threshold').addEventListener('input', updateTotalsAndOutcome);
+      document.getElementById('scoring-post-final').addEventListener('click', postFinalScores);
+      document.getElementById('scoring-export-csv').addEventListener('click', exportMasterTrackerToCSV);
+      document.getElementById('scoring-clear').addEventListener('click', clearCurrentForm);
+      document.getElementById('view-pdf-button').addEventListener('click', openPdfViewerForCurrentApp);
 
       // PDF Viewer & Modals
       document.getElementById('close-pdf-viewer-btn').addEventListener('click', closePdfViewer);
@@ -1298,6 +1634,17 @@ window.setCommitteeUser = (profile) => {
       document.getElementById('guide-modal').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeGuideModal() });
       document.getElementById('confirmation-modal-cancel').addEventListener('click', hideConfirmationModal);
       document.getElementById('confirmation-modal-confirm').addEventListener('click', handleConfirm);
+      
+      // Score Edit Modal
+      document.getElementById('close-score-edit-modal-btn').addEventListener('click', closeScoreEditModal);
+      document.getElementById('score-edit-modal-cancel').addEventListener('click', closeScoreEditModal);
+      document.getElementById('score-edit-modal-save').addEventListener('click', saveEditedScore);
+      document.getElementById('score-edit-modal-body').addEventListener('input', (e) => {
+          if (e.target.matches('input.score-slider')) {
+              e.target.nextElementSibling.textContent = e.target.value;
+              updateEditScoreTotals();
+          }
+      });
       
       // Scoring Matrix Inputs (Delegation)
       const scoringBody = document.getElementById('scoring-matrix-body');
@@ -1316,7 +1663,5 @@ window.setCommitteeUser = (profile) => {
       });
     });
   </script>
-  <link rel="stylesheet" href="assets/auth.css" />
-<script defer src="assets/auth.js"></script>
 </body>
 </html>
