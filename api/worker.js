@@ -1,143 +1,87 @@
-// Cloudflare Worker — Communities' Choice API
-// Endpoints: POST /api/login, GET /api/me, POST /api/logout
-// - Login accepts username + password1
-// - Sets a signed cookie AND returns a token (fallback when 3rd-party cookies are blocked)
-// - /api/me accepts cookie OR Authorization: Bearer <token>
+// Portal auth helper
+// - Sends login as x-www-form-urlencoded to avoid preflight
+// - Uses cookie (when allowed) or token via Authorization header
 
-const COOKIE_NAME = "cc_session";
-const COOKIE_MAX_DAYS = 30;
+const API_BASE = "https://communities-choice-api.dan-w-tva.workers.dev";
 
-// ------------------------------ USERS ------------------------------
-const users = [
-  { "username": "tvaadmin",    "name": "TVA Admin",       "area": "ALL",       "role": "admin" },
-  { "username": "bpaynter",    "name": "Boyd Paynter",    "area": "Blaenavon", "role": "member" },
-  { "username": "klang",       "name": "Karen Lang",      "area": "Blaenavon", "role": "member" },
-  { "username": "lwhite",      "name": "Louise White",    "area": "Blaenavon", "role": "member" },
-  { "username": "mletch",      "name": "Melanie Letch",   "area": "Blaenavon", "role": "member" },
-  { "username": "nlewis",      "name": "Nigel Lewis",     "area": "Blaenavon", "role": "member" },
-  { "username": "scharles",    "name": "Sarah J Charles", "area": "Blaenavon", "role": "member" },
-  { "username": "sdavies",     "name": "Steffan Davies",  "area": "Blaenavon", "role": "member" },
-  { "username": "sford",       "name": "Sharon Ford",     "area": "Blaenavon", "role": "member" },
-  { "username": "tgardner",    "name": "Terry Gardner",   "area": "Blaenavon", "role": "member" },
-  { "username": "aanderson",   "name": "Alysha Anderson", "area": "Penygarn",  "role": "member" },
-  { "username": "hdewar",      "name": "Heather Dewar",   "area": "Penygarn",  "role": "member" },
-  { "username": "jbruton",     "name": "John Bruton",     "area": "Penygarn",  "role": "member" },
-  { "username": "jcharles",    "name": "Joe Charles",     "area": "Penygarn",  "role": "member" },
-  { "username": "lbevan",      "name": "Leighton Bevan",  "area": "Penygarn",  "role": "member" },
-  { "username": "sbradley",    "name": "Sarah Bradley",   "area": "Penygarn",  "role": "member" },
-  { "username": "brichardson", "name": "Bailey Richardson","area": "ALL",      "role": "admin"  },
-  { "username": "dwatkins",    "name": "Dan Watkins",     "area": "ALL",       "role": "admin"  },
-  { "username": "gjenkins",    "name": "Gabi Jenkins",    "area": "St Cadocs", "role": "member" },
-  { "username": "mcock",       "name": "Mike Cock",       "area": "St Cadocs", "role": "member" },
-  { "username": "sdalby",      "name": "Sonia Dalby",     "area": "St Cadocs", "role": "member" },
-  { "username": "sgrudgings",  "name": "Sam Grudgings",   "area": "Thornhill & Upper Cwmbran", "role": "member" }
-];
+const $  = (s, r=document)=>r.querySelector(s);
+const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
 
-// --------------------------- signing helpers ---------------------------
-const te = new TextEncoder();
-function b64urlEncodeStr(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
-function b64urlDecodeStr(b64){ b64=b64.replace(/-/g,"+").replace(/_/g,"/"); while(b64.length%4)b64+="="; return decodeURIComponent(escape(atob(b64))); }
-async function hmacSha256(secret,data){
-  const key=await crypto.subtle.importKey("raw",te.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  const sig=await crypto.subtle.sign("HMAC",key,te.encode(data));
-  const bytes=new Uint8Array(sig); let bin=""; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]); return b64urlEncodeStr(bin);
+function ensureOverlay(){
+  if ($("#cc-login-overlay")) return;
+  const w=document.createElement("div");
+  w.innerHTML=`
+  <div id="cc-login-overlay" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;">
+    <div style="background:#fff;border-radius:16px;width:min(520px,92vw);padding:24px 24px 28px;box-shadow:0 30px 60px rgba(0,0,0,.25);">
+      <h2 style="margin:0 0 8px;font-family:system-ui,sans-serif">Committee Portal Login</h2>
+      <p style="margin:0 18px 18px 0;color:#555">Please sign in with your username and password.</p>
+      <form id="cc-login-form">
+        <label style="display:block;font-weight:600;margin:10px 0 6px;">Username</label>
+        <input id="cc-username" autocomplete="username" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+        <label style="display:block;font-weight:600;margin:16px 0 6px;">Password</label>
+        <input id="cc-password" type="password" autocomplete="current-password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+        <div id="cc-login-error" style="color:#c00;margin:8px 0 0;display:none"></div>
+        <button type="submit" style="margin-top:14px;width:100%;padding:12px 14px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;cursor:pointer">Sign in</button>
+      </form>
+    </div>
+  </div>`;
+  document.body.appendChild(w.firstElementChild);
 }
-async function makeToken(payload,secret,maxDays=COOKIE_MAX_DAYS){
-  const now=Math.floor(Date.now()/1000), exp=now+maxDays*24*60*60;
-  const body={...payload,iat:now,exp}; const data=b64urlEncodeStr(JSON.stringify(body)); const sig=await hmacSha256(secret,data); return `${data}.${sig}`;
-}
-async function parseToken(token,secret){
-  if(!token || token.indexOf(".")===-1) return null;
-  const [data,sig]=token.split("."); const expected=await hmacSha256(secret,data); if(sig!==expected) return null;
-  const payload=JSON.parse(b64urlDecodeStr(data)); if(payload.exp && payload.exp<Math.floor(Date.now()/1000)) return null; return payload;
+function showLoginOverlay(show){ const o=$("#cc-login-overlay"); if(o) o.style.display=show?"flex":"none"; }
+function setError(m){ const e=$("#cc-login-error"); if(e){ e.textContent=m||""; e.style.display=m?"block":"none"; } }
+
+const TOKEN_KEY="cc_token";
+const getToken=()=>sessionStorage.getItem(TOKEN_KEY)||"";
+const setToken=t=>{ if(t) sessionStorage.setItem(TOKEN_KEY,t); };
+const clearToken=()=>sessionStorage.removeItem(TOKEN_KEY);
+const authHeaders=()=>{ const h={}; const t=getToken(); if(t) h["Authorization"]=`Bearer ${t}`; return h; };
+
+function afterAuth(me){
+  if (window.applyAreaFilter) window.applyAreaFilter(me.area, me.role);
+  if (window.setCommitteeUser) window.setCommitteeUser(me);
+  setError(""); showLoginOverlay(false);
 }
 
-// ----------------------------- Cookie helpers ------------------------------
-function setCookie(headers,value,days=COOKIE_MAX_DAYS){
-  const maxAge=days*24*60*60;
-  headers.append("Set-Cookie",`${COOKIE_NAME}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=None`);
-}
-function clearCookie(headers){ headers.append("Set-Cookie",`${COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None`); }
-async function readCookie(cookieHeader,secret){
-  const m=(cookieHeader||"").match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`)); if(!m) return null; return await parseToken(m[1],secret);
-}
-
-// Accept session from cookie OR Authorization: Bearer <token>
-async function readSession(request,secret){
-  const c=await readCookie(request.headers.get("Cookie")||"",secret); if(c) return c;
-  const auth=request.headers.get("Authorization")||""; const mm=auth.match(/^Bearer\s+(.+)$/i); if(mm) return await parseToken(mm[1],secret);
-  return null;
-}
-
-// ------------------------------- CORS helpers ------------------------------
-function corsHeaders(origin, ALLOWED_ORIGIN){
-  const allow = ALLOWED_ORIGIN || origin || "";
-  return {
-    "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Credentials": "true",
-    "Vary": "Origin",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
-  };
-}
-function json(obj, init={}){ const headers=new Headers({ "Content-Type":"application/json; charset=utf-8", ...init.headers }); return new Response(JSON.stringify(obj),{...init,headers}); }
-function text(msg, status=200, headers={}){ return new Response(msg,{status,headers:new Headers(headers)}); }
-
-// Parse body as JSON OR form (x-www-form-urlencoded) OR plain text
-async function readCredentials(request){
-  let username="", password="";
-  const ct=(request.headers.get("Content-Type")||"").toLowerCase();
+async function checkSession(){
+  ensureOverlay();
   try{
-    if(ct.includes("application/json")){
-      const b=await request.json(); username=(b?.username||"").trim(); password=b?.password||"";
-    }else if(ct.includes("application/x-www-form-urlencoded")){
-      const b=await request.text(); const p=new URLSearchParams(b); username=(p.get("username")||"").trim(); password=p.get("password")||"";
-    }else{ // attempt JSON in text
-      const t=await request.text(); try{ const b=JSON.parse(t); username=(b?.username||"").trim(); password=b?.password||""; }catch{}
-    }
-  }catch{}
-  return { username, password };
+    const r=await fetch(`${API_BASE}/api/me`, { credentials:"include", headers:authHeaders() });
+    if(!r.ok){ showLoginOverlay(true); return; }
+    const me=await r.json(); afterAuth(me);
+  }catch{ showLoginOverlay(true); setError("Failed to reach sign-in service."); }
 }
 
-// --------------------------------- WORKER ----------------------------------
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const origin = request.headers.get("Origin") || "";
-    const method = request.method.toUpperCase();
-    const headers = new Headers({ "Cache-Control": "no-store", ...corsHeaders(origin, env.ALLOWED_ORIGIN) });
-    const SECRET = env.COOKIE_SECRET || "change-me";
+async function doLogin(e){
+  e.preventDefault(); setError("");
+  const username=$("#cc-username")?.value?.trim()||""; const password=$("#cc-password")?.value||"";
+  if(!username||!password){ setError("Please enter username and password."); return; }
 
-    if (method === "OPTIONS") return new Response(null, { status: 204, headers });
+  try{
+    const body=new URLSearchParams({ username, password });
+    const r=await fetch(`${API_BASE}/api/login`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+      credentials:"include",
+      body
+    });
+    if(!r.ok){ setError(await r.text()||"Login failed."); return; }
 
-    // /api/me
-    if (url.pathname === "/api/me" && method === "GET") {
-      const session = await readSession(request, SECRET);
-      if (!session) return text("Unauthorized", 401, headers);
-      return json({ username: session.username, name: session.name, role: session.role, area: session.area }, { headers });
-    }
+    const data=await r.clone().json().catch(()=>null);
+    if(data && data.token) setToken(data.token);
 
-    // /api/login (accept JSON or form)
-    if (url.pathname === "/api/login" && method === "POST") {
-      const { username, password } = await readCredentials(request);
-      if (!username || !password) return text("Missing credentials", 400, headers);
-      if (password !== "password1") return text("Invalid credentials", 401, headers);
+    const meRes=await fetch(`${API_BASE}/api/me`, { credentials:"include", headers:authHeaders() });
+    if(!meRes.ok){ setError("Could not load profile."); return; }
+    const me=await meRes.json(); afterAuth(me);
+  }catch{ setError("Failed to fetch"); }
+}
 
-      const row = users.find(u => String(u.username || "").toLowerCase() === username.toLowerCase());
-      if (!row) return text("Unknown user", 401, headers);
+async function doLogout(e){ if(e) e.preventDefault(); clearToken(); try{ await fetch(`${API_BASE}/api/logout`, { method:"POST", credentials:"include" }); }catch{} showLoginOverlay(true); }
 
-      const payload = { username: row.username, name: row.name, role: row.role || "member", area: row.area };
-      const token = await makeToken(payload, SECRET, COOKIE_MAX_DAYS);
-      setCookie(headers, token);
-      return json({ ...payload, token }, { headers });
-    }
+document.addEventListener("DOMContentLoaded", () => {
+  ensureOverlay();
+  $("#cc-login-form")?.addEventListener("submit", doLogin);
+  [ "#logoutBtn", "a[href='#logout']", ".nav-logout", "#logout" ].forEach(sel => $$(sel).forEach(b=>b.addEventListener("click", doLogout)));
+  checkSession();
+});
 
-    // /api/logout
-    if (url.pathname === "/api/logout" && method === "POST") {
-      clearCookie(headers);
-      return text("OK", 200, headers);
-    }
-
-    return text("Not found", 404, headers);
-  }
-};
+window.ccShowLogin = () => { ensureOverlay(); showLoginOverlay(true); };
