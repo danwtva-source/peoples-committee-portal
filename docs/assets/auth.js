@@ -1,87 +1,258 @@
-// Portal auth helper
-// - Sends login as x-www-form-urlencoded to avoid preflight
-// - Uses cookie (when allowed) or token via Authorization header
+/* Communities' Choice – auth + scoring-matrix wiring (single file)
+   Drop-in replacement for docs/assets/auth.js
+*/
 
 const API_BASE = "https://communities-choice-api.dan-w-tva.workers.dev";
 
-const $  = (s, r=document)=>r.querySelector(s);
-const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+// ---------- small utils ----------
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-function ensureOverlay(){
-  if ($("#cc-login-overlay")) return;
-  const w=document.createElement("div");
-  w.innerHTML=`
-  <div id="cc-login-overlay" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;">
-    <div style="background:#fff;border-radius:16px;width:min(520px,92vw);padding:24px 24px 28px;box-shadow:0 30px 60px rgba(0,0,0,.25);">
-      <h2 style="margin:0 0 8px;font-family:system-ui,sans-serif">Committee Portal Login</h2>
-      <p style="margin:0 18px 18px 0;color:#555">Please sign in with your username and password.</p>
-      <form id="cc-login-form">
-        <label style="display:block;font-weight:600;margin:10px 0 6px;">Username</label>
-        <input id="cc-username" autocomplete="username" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
-        <label style="display:block;font-weight:600;margin:16px 0 6px;">Password</label>
-        <input id="cc-password" type="password" autocomplete="current-password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
-        <div id="cc-login-error" style="color:#c00;margin:8px 0 0;display:none"></div>
-        <button type="submit" style="margin-top:14px;width:100%;padding:12px 14px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;cursor:pointer">Sign in</button>
-      </form>
-    </div>
-  </div>`;
-  document.body.appendChild(w.firstElementChild);
-}
-function showLoginOverlay(show){ const o=$("#cc-login-overlay"); if(o) o.style.display=show?"flex":"none"; }
-function setError(m){ const e=$("#cc-login-error"); if(e){ e.textContent=m||""; e.style.display=m?"block":"none"; } }
-
-const TOKEN_KEY="cc_token";
-const getToken=()=>sessionStorage.getItem(TOKEN_KEY)||"";
-const setToken=t=>{ if(t) sessionStorage.setItem(TOKEN_KEY,t); };
-const clearToken=()=>sessionStorage.removeItem(TOKEN_KEY);
-const authHeaders=()=>{ const h={}; const t=getToken(); if(t) h["Authorization"]=`Bearer ${t}`; return h; };
-
-function afterAuth(me){
-  if (window.applyAreaFilter) window.applyAreaFilter(me.area, me.role);
-  if (window.setCommitteeUser) window.setCommitteeUser(me);
-  setError(""); showLoginOverlay(false);
+function fetchJSON(url, opts={}) {
+  return fetch(url, { credentials: 'include', ...opts }).then(async res => {
+    const text = await res.text();
+    let body = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { body = {}; }
+    if (!res.ok) {
+      const msg = body?.error || body?.message || text || res.statusText;
+      throw new Error(msg || `HTTP ${res.status}`);
+    }
+    return body;
+  });
 }
 
-async function checkSession(){
-  ensureOverlay();
-  try{
-    const r=await fetch(`${API_BASE}/api/me`, { credentials:"include", headers:authHeaders() });
-    if(!r.ok){ showLoginOverlay(true); return; }
-    const me=await r.json(); afterAuth(me);
-  }catch{ showLoginOverlay(true); setError("Failed to reach sign-in service."); }
+// Store token in sessionStorage (Worker also sets cookie)
+function setToken(t){ try{sessionStorage.setItem('cc_token', t||'')}catch{} }
+function getToken(){ try{return sessionStorage.getItem('cc_token')||''}catch{ return '' } }
+function clearToken(){ try{sessionStorage.removeItem('cc_token')}catch{} }
+
+// ---------- overlay UI ----------
+function ensureOverlay() {
+  if ($('#cc-login-overlay')) return;
+  const el = document.createElement('div');
+  el.id = 'cc-login-overlay';
+  el.style.cssText = `
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.35);backdrop-filter:saturate(1.1) blur(2px);z-index:9999;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  `;
+  el.innerHTML = `
+    <form id="cc-login-card" style="width:min(560px,95vw);background:#fff;border-radius:16px;padding:24px;box-shadow:0 22px 60px rgba(0,0,0,.35)">
+      <h2 style="margin:0 0 8px">Committee Portal Login</h2>
+      <p style="margin:.25rem 0 1rem;color:#666">Please sign in with your username and password.</p>
+      <label style="display:block;margin:.5rem 0 .25rem">Username</label>
+      <input id="cc-username" type="text" required style="width:100%;padding:.65rem;border:1px solid #ddd;border-radius:10px">
+      <label style="display:block;margin:.75rem 0 .25rem">Password</label>
+      <input id="cc-password" type="password" required style="width:100%;padding:.65rem;border:1px solid #ddd;border-radius:10px">
+      <div id="cc-error" style="color:#b91c1c;margin:.5rem 0 .25rem;min-height:1.25rem"></div>
+      <button id="cc-submit" type="submit" style="margin-top:.25rem;width:100%;padding:.8rem;border:0;background:#0f172a;color:#fff;border-radius:12px;cursor:pointer">Sign in</button>
+    </form>
+  `;
+  document.body.appendChild(el);
+  $('#cc-login-card').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    $('#cc-error').textContent = '';
+    const username = $('#cc-username').value.trim();
+    const password = $('#cc-password').value;
+    try {
+      const body = JSON.stringify({ username, password });
+      const data = await fetchJSON(`${API_BASE}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      });
+      if (data?.token) setToken(data.token);
+      hideOverlay();
+      onAuthenticated(data);
+    } catch (err) {
+      $('#cc-error').textContent = err.message || 'Login failed';
+    }
+  });
 }
+function showOverlay(){ ensureOverlay(); $('#cc-login-overlay').style.display='flex'; }
+function hideOverlay(){ const el=$('#cc-login-overlay'); if (el) el.style.display='none'; }
 
-async function doLogin(e){
-  e.preventDefault(); setError("");
-  const username=$("#cc-username")?.value?.trim()||""; const password=$("#cc-password")?.value||"";
-  if(!username||!password){ setError("Please enter username and password."); return; }
-
-  try{
-    const body=new URLSearchParams({ username, password });
-    const r=await fetch(`${API_BASE}/api/login`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
-      credentials:"include",
-      body
+// ---------- auth ----------
+async function getMe() {
+  try {
+    const data = await fetchJSON(`${API_BASE}/api/me`, {
+      headers: getToken() ? { 'Authorization': `Bearer ${getToken()}` } : undefined
     });
-    if(!r.ok){ setError(await r.text()||"Login failed."); return; }
-
-    const data=await r.clone().json().catch(()=>null);
-    if(data && data.token) setToken(data.token);
-
-    const meRes=await fetch(`${API_BASE}/api/me`, { credentials:"include", headers:authHeaders() });
-    if(!meRes.ok){ setError("Could not load profile."); return; }
-    const me=await meRes.json(); afterAuth(me);
-  }catch{ setError("Failed to fetch"); }
+    return data;
+  } catch { return null; }
 }
 
-async function doLogout(e){ if(e) e.preventDefault(); clearToken(); try{ await fetch(`${API_BASE}/api/logout`, { method:"POST", credentials:"include" }); }catch{} showLoginOverlay(true); }
+async function doLogout() {
+  try { await fetchJSON(`${API_BASE}/api/logout`, { method:'POST' }); } catch {}
+  clearToken();
+  showOverlay();
+}
 
-document.addEventListener("DOMContentLoaded", () => {
-  ensureOverlay();
-  $("#cc-login-form")?.addEventListener("submit", doLogin);
-  [ "#logoutBtn", "a[href='#logout']", ".nav-logout", "#logout" ].forEach(sel => $$(sel).forEach(b=>b.addEventListener("click", doLogout)));
-  checkSession();
-});
+// Bind logout to any of these selectors
+function bindLogout() {
+  const sel = ['#logoutBtn','a[href="#logout"]','.nav-logout','#logout'];
+  sel.forEach(s=>{
+    $$(s).forEach(a=>{
+      a.addEventListener('click', (e)=>{ e.preventDefault(); doLogout(); });
+    });
+  });
+}
 
-window.ccShowLogin = () => { ensureOverlay(); showLoginOverlay(true); };
+// ---------- scoring matrix wiring (linked selects + pdf + total) ----------
+const Matrix = (function(){
+  let pbSel, appSel, viewBtn, matrix, totalEl, pdfDlg, pdfFrm, pdfTitle, pdfClose;
+  let maps;
+
+  const buildMaps = () => {
+    const pbTo = new Map();
+    const appTo = new Map();
+    if (pbSel) [...pbSel.options].forEach(opt=>{
+      if (!opt.value) return;
+      pbTo.set(opt.value, {
+        applicant: opt.dataset.applicant || "",
+        area:      opt.dataset.area || "",
+        pdf:       opt.dataset.pdf || ""
+      });
+    });
+    if (appSel) [...appSel.options].forEach(opt=>{
+      if (!opt.value) return;
+      appTo.set(opt.value, {
+        pb:   opt.dataset.pb || "",
+        area: opt.dataset.area || "",
+        pdf:  opt.dataset.pdf || ""
+      });
+    });
+    return { pbTo, appTo };
+  };
+
+  const openPdf = (url, title) => {
+    if (!url) { alert('No PDF available for this application'); return; }
+    if (pdfFrm) pdfFrm.src = url;
+    if (pdfTitle) pdfTitle.textContent = title || 'Application PDF';
+    if (pdfDlg && typeof pdfDlg.showModal === 'function') pdfDlg.showModal();
+    else if (pdfDlg) pdfDlg.style.display = 'block';
+    else window.open(url, '_blank', 'noopener');
+  };
+  const closePdf = () => {
+    try { pdfDlg?.close(); } catch{}; if (pdfDlg) pdfDlg.style.display='none'; if (pdfFrm) pdfFrm.src='about:blank';
+  };
+
+  const recalcTotal = () => {
+    if (!matrix || !totalEl) return;
+    const inputs = $$('.criterion-input', matrix);
+    let sum = 0;
+    for (const i of inputs) sum += Number(i.value || 0);
+    totalEl.textContent = String(sum);
+  };
+
+  const renderMatrixFor = () => {
+    if (!matrix) return;
+    matrix.classList.remove('hidden','is-hidden');
+    matrix.style.removeProperty('display');
+    recalcTotal();
+  };
+
+  const syncFromPb = () => {
+    if (!pbSel || !appSel) return;
+    const rec = maps.pbTo.get(pbSel.value);
+    if (!rec) return;
+    for (const o of appSel.options) if (o.value === rec.applicant) { appSel.value = o.value; break; }
+    renderMatrixFor();
+  };
+
+  const syncFromApp = () => {
+    if (!pbSel || !appSel) return;
+    const rec = maps.appTo.get(appSel.value);
+    if (!rec) return;
+    for (const o of pbSel.options) if (o.value === rec.pb) { pbSel.value = o.value; break; }
+    renderMatrixFor();
+  };
+
+  const wire = () => {
+    pbSel   = $('#pbRefSelect');
+    appSel  = $('#applicantSelect');
+    viewBtn = $('#viewPdfBtn');
+    matrix  = $('#matrixContainer');
+    totalEl = $('#totalScore');
+
+    pdfDlg  = $('#pdfDialog');
+    pdfFrm  = $('#pdfFrame');
+    pdfTitle= $('#pdfTitle');
+    pdfClose= $('#pdfCloseBtn');
+
+    if (!pbSel && !appSel) return;    // not on matrix page
+    maps = buildMaps();
+
+    pbSel?.addEventListener('change', syncFromPb);
+    appSel?.addEventListener('change', syncFromApp);
+
+    viewBtn?.addEventListener('click', ()=>{
+      const fromPb = maps.pbTo.get(pbSel?.value || '');
+      const fromAp = maps.appTo.get(appSel?.value || '');
+      const url = (fromPb?.pdf || fromAp?.pdf || '').trim();
+      const ttl = (fromPb?.applicant || appSel?.value || 'Application PDF');
+      openPdf(url, ttl);
+    });
+    pdfClose?.addEventListener('click', closePdf);
+
+    $$('.criterion-input', matrix).forEach(i=>{
+      i.addEventListener('input', recalcTotal);
+      i.addEventListener('change', recalcTotal);
+    });
+
+    // initialize
+    if (pbSel?.value) syncFromPb();
+    else if (appSel?.value) syncFromApp();
+  };
+
+  // public
+  return {
+    wire,
+
+    // Called by area filter
+    filterByArea(area, role){
+      const showAll = (role === 'admin' || area === 'ALL');
+      function filterSelect(sel, getArea){
+        if (!sel) return;
+        [...sel.options].forEach(opt=>{
+          const optArea = getArea(opt);
+          const show = showAll || (optArea === area) || (optArea === 'Cross-Area') || (optArea === 'ALL');
+          opt.hidden = !show;
+        });
+        const first = [...sel.options].find(o=>!o.hidden);
+        if (first) sel.value = first.value;
+      }
+      filterSelect($('#pbRefSelect'),  o => o.dataset.area || '');
+      filterSelect($('#applicantSelect'), o => o.dataset.area || '');
+      maps = buildMaps();
+      if ($('#pbRefSelect')?.value) syncFromPb(); else if ($('#applicantSelect')?.value) syncFromApp();
+    }
+  };
+})();
+
+// ---------- hooks called after login ----------
+function onAuthenticated(me) {
+  // welcome name if you have it
+  const w = $('#welcomeName'); if (w) w.textContent = me?.name || '';
+
+  // area filter (admins see all)
+  Matrix.filterByArea(me?.area || '', me?.role || 'member');
+
+  // (re)wire scoring page features
+  Matrix.wire();
+
+  bindLogout();
+}
+
+async function bootstrap() {
+  bindLogout();
+  const me = await getMe();
+  if (me) {
+    hideOverlay();
+    onAuthenticated(me);
+  } else {
+    showOverlay();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
