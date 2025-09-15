@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Committee Portal - Communities' Choice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for Admin Dashboard Visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    /* ------------------- */
+    /* Global & Font Setup */
+    /* ------------------- */
+    html.modal-open {
+      overflow: hidden; /* Prevent scrolling when modal is open */
+    }
+    h1, h2, h3, .dynapuff {
+      font-family: 'DynaPuff', cursive !important;
+    }
+    body, p, li, span, a, div, button, ul, table, input, select, textarea, .arial-nova {
+      font-family: 'Arial Nova', Arial, Helvetica, sans-serif !important;
+    }
+    /* Hide pages by default */
+    .portal-page {
+      display: none;
+    }
+    
+    /* ------------------- */
+    /* Scoring & Portal Styles */
+    /* ------------------- */
+    .scoring-table th, .scoring-table td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+    .tooltip-icon {
+        cursor: pointer;
+        margin-left: 8px;
+        color: #a78bfa;
+    }
+    .tooltip-text {
+        visibility: hidden;
+        width: 320px;
+        background-color: #555;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -160px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-family: 'Arial Nova', Arial, Helvetica, sans-serif !important;
+        font-size: 0.875rem;
+    }
+    .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+    }
+    .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+    /* Custom range slider style */
+    input[type="range"].score-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      background: #e9d5ff;
+      border-radius: 5px;
+      outline: none;
+      opacity: 0.9;
+      transition: opacity .2s;
+    }
+    input[type="range"].score-slider:hover {
+      opacity: 1;
+    }
+    input[type="range"].score-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #9333ea;
+      cursor: pointer;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    input[type="range"].score-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: #9333ea;
+      cursor: pointer;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    /* PDF Viewer Draggable Window */
+    #pdf-viewer-window {
+        z-index: 1001; /* Ensure it's on top */
+    }
+    #pdf-viewer-header {
+        cursor: move;
+    }
+     .task-list-button {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .task-list-button:hover {
+        background-color: #f3e8ff;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-100 via-purple-200 to-teal-100 min-h-screen">
+
+  <!-- Header & Navigation -->
+  <header class="bg-white/80 backdrop-blur-sm shadow-md sticky top-0 z-50">
+      <div class="container mx-auto flex justify-between items-center p-4">
+          <div class="flex items-center space-x-3">
+              <img src="https://d41chssnpqdne.cloudfront.net/user_upload_by_module/chat_bot/files/970258/XU0aJN5kLsT4Hiln.png?Expires=1758359968&Signature=m4JUd4i7qveZkQSjPA3DE3SX7em-IkAR4kLSYZF6Cli6Wmqncgv9re65ERZTY4t00ObtvWHltRUvrO7EWUhwu5ezO0tW7qXQyOhp~7iUaSYKADQOnrJx9kzCYuZNhn289oiztKsQLYlaUDziLIGZEGHWZ3998hKXzR2gVQJMcG1GJpjeUxouVTNSR5Ia1tO~xcVcdIncJU5IM-tC7wt9d-IJUvkmnowjtq6~qszjtVaddTN5Wti-XfEzJtUgfU3lZlj9vd07DqmxwLlna1TM9wajPnbEuyT3i0oHR9OJRbOP09h0W4RYRarVNiJ5YhwVqO~0P2Fj6tpThtXF0o-klQ__&Key-Pair-Id=K3USGZIKWMDCSX" alt="Logo" class="h-12 rounded-lg">
+              <h1 class="text-xl font-bold text-purple-700 dynapuff hidden sm:block">Communities' Choice</h1>
+          </div>
+           <nav id="portal-nav" class="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-base flex-wrap justify-end" style="display: none;">
+                <div id="user-info" class="text-sm text-purple-800 font-semibold mr-4"></div>
+                <button id="nav-portal-home" data-portal-page="page-portal-dashboard" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Portal Home</button>
+                <button data-portal-page="page-scoring" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Scoring Matrix</button>
+                <button data-portal-page="page-portal-apps" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Applications</button>
+                <button data-portal-page="page-portal-docs" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Documents</button>
+                <button id="nav-master-tracker" data-portal-page="page-portal-tracker" class="text-purple-700 hover:bg-purple-100 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff admin-only" style="display: none;">Master Tracker</button>
+                <button id="logout-button" class="bg-red-100 text-red-700 hover:bg-red-200 font-semibold py-2 px-3 rounded-lg transition duration-200 dynapuff">Logout</button>
+            </nav>
+      </div>
+  </header>
+
+  <main>
+    <!-- ======================= -->
+    <!-- SECURE PORTAL PAGES     -->
+    <!-- ======================= -->
+    
+    <!-- ADMIN DASHBOARD -->
+    <div id="page-admin-dashboard" class="portal-page">
+         <div class="w-full max-w-7xl mx-auto my-8 px-4">
+            <div class="text-center mb-10">
+              <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">Administrator Dashboard</h1>
+              <p class="max-w-3xl mx-auto text-gray-700 arial-nova">
+                Oversight of all People's Committee scoring activities.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-purple-800 dynapuff mb-4">Scoring Progress by Area</h3>
+                    <canvas id="progress-chart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-purple-800 dynapuff mb-4">Overall Summary</h3>
+                    <div id="overall-summary-stats" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <div class="mb-6 bg-white p-4 rounded-xl shadow-md">
+                <label for="admin-area-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Area:</label>
+                <select id="admin-area-filter" class="w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                    <option value="All">All Areas</option>
+                    <option value="Blaenavon">Blaenavon</option>
+                    <option value="Thornhill & Upper Cwmbran">Thornhill & Upper Cwmbran</option>
+                    <option value="Trevethin, Penygarn & St. Cadocs">Trevethin, Penygarn & St. Cadocs</option>
+                </select>
+            </div>
+            <div id="admin-dashboard-content" class="space-y-8">
+                <!-- Admin dashboard content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PORTAL DASHBOARD (Regular Member) -->
+    <div id="page-portal-dashboard" class="portal-page">
+         <div class="w-full max-w-5xl mx-auto my-8 px-4">
+            <!-- Hero Section -->
+            <div class="text-center mb-10">
+              <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">People's Committee Portal</h1>
+              <p class="max-w-3xl mx-auto text-gray-700 arial-nova">
+                Welcome. This is your central hub for scoring applications, viewing submitted documents, and accessing committee resources.
+              </p>
+            </div>
+            <div id="dashboard-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1: Scoring Matrix -->
+                <div data-portal-page="page-scoring" class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer text-center">
+                    <div class="bg-purple-100 text-purple-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-purple-800 mb-2 dynapuff">Scoring Matrix</h2>
+                    <p class="text-gray-600 arial-nova">Access the official tool to assess and score all submitted applications.</p>
+                </div>
+                <!-- Card 2: Applications Viewer -->
+                <div data-portal-page="page-portal-apps" class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer text-center">
+                     <div class="bg-teal-100 text-teal-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a4 4 0 014-4h6a4 4 0 014 4v12a4 4 0 01-4 4H7zM10 12h4"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-purple-800 mb-2 dynapuff">Applications Viewer</h2>
+                    <p class="text-gray-600 arial-nova">View and read all the submitted application PDF documents.</p>
+                </div>
+                <!-- Card 3: Documents Hub -->
+                <div data-portal-page="page-portal-docs" class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer text-center">
+                    <div class="bg-purple-100 text-purple-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-purple-800 mb-2 dynapuff">Documents & Hub</h2>
+                    <p class="text-gray-600 arial-nova">Find committee-specific documents, meeting minutes, and guidance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PORTAL: SCORING MATRIX -->
+    <div id="page-scoring" class="portal-page">
+        <div class="w-full max-w-7xl mx-auto my-8 px-4">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                 <button class="back-to-dashboard inline-flex items-center text-purple-700 hover:text-purple-900 font-semibold transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Portal Dashboard
+                </button>
+                 <button id="open-guide-button" class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    View User Guide
+                </button>
+            </div>
+            <!-- Hero Section -->
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">People's Committee Scoring Matrix</h1>
+                <p class="max-w-3xl mx-auto text-gray-700 arial-nova">
+                    Use this tool to score applications based on the agreed criteria. Your scores are saved in real-time.
+                </p>
+            </div>
+
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl">
+                 <div id="scoring-finalized-message" class="hidden mb-4 p-4 text-center font-semibold text-blue-800 bg-blue-100 border border-blue-200 rounded-lg"></div>
+                <!-- Header Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-200">
+                    <div>
+                        <label for="scoring-ref" class="block text-sm font-medium text-gray-700 mb-1">PB Reference</label>
+                        <select id="scoring-ref" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
+                    </div>
+                    <div>
+                        <label for="scoring-applicant" class="block text-sm font-medium text-gray-700 mb-1">Applicant</label>
+                        <select id="scoring-applicant" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></select>
+                    </div>
+                    <div>
+                        <label for="scoring-area" class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                        <input type="text" id="scoring-area" class="w-full p-2 border border-gray-300 rounded-md bg-gray-100" readonly>
+                    </div>
+                </div>
+
+                 <!-- View PDF Button -->
+                <div class="mb-6 text-center">
+                    <button id="view-pdf-button" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>View Application PDF</button>
+                </div>
+
+
+                <!-- Scoring Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 scoring-table">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dynapuff">Criterion</th>
+                                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dynapuff">Guidance</th>
+                                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dynapuff" style="min-width: 150px;">Score</th>
+                                <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dynapuff" style="min-width: 250px;">Notes & Justification</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoring-matrix-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+
+                <!-- Totals & Outcome -->
+                <div class="mt-6 pt-6 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex items-center space-x-4">
+                        <h3 class="text-lg font-bold text-gray-800 dynapuff">Total Score:</h3>
+                        <span id="scoring-total" class="text-2xl font-bold text-purple-700">0 / 100</span>
+                    </div>
+                     <div class="flex items-center space-x-4">
+                        <h3 class="text-lg font-bold text-gray-800 dynapuff">Outcome:</h3>
+                        <span id="scoring-outcome" class="px-4 py-1 text-lg font-bold text-white rounded-full"></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                         <label for="scoring-threshold" class="text-sm font-medium text-gray-700">Threshold:</label>
+                         <input id="scoring-threshold" type="number" value="65" class="w-20 p-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+                
+                 <!-- Actions & Task List -->
+                <div class="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                         <h3 class="text-xl font-bold text-gray-800 mb-4 dynapuff">Actions & Export</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="scoring-post-final" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow transition">Post Final Scores</button>
+                            <button id="scoring-export-csv" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow transition admin-only" style="display: none;">Export Master CSV</button>
+                            <button id="scoring-clear" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition">Clear Current Form</button>
+                        </div>
+                         <p id="scoring-status" class="text-sm text-gray-500 mt-3 h-4"></p>
+                    </div>
+                    <div id="task-list-container">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 dynapuff">My Scoring Tasks</h3>
+                        <div id="task-list-content" class="bg-gray-50 p-2 rounded-lg h-48 overflow-y-auto space-y-1">
+                            <p class="text-gray-500 p-2">Loading tasks...</p>
+                        </div>
+                         <div id="task-list-summary" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PORTAL: APPLICATIONS VIEWER -->
+    <div id="page-portal-apps" class="portal-page">
+         <div class="w-full max-w-7xl mx-auto my-8 px-4">
+              <button class="back-to-dashboard mb-6 inline-flex items-center text-purple-700 hover:text-purple-900 font-semibold transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Portal Dashboard
+            </button>
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">Application Viewer</h1>
+                <p class="max-w-3xl mx-auto text-gray-700 arial-nova">
+                    Select an application from the list to view the submitted PDF.
+                </p>
+            </div>
+            
+            <div class="lg:flex lg:space-x-8">
+                <div class="lg:w-1/3 bg-white p-4 rounded-xl shadow-lg mb-6 lg:mb-0">
+                    <h3 class="text-lg font-bold text-purple-700 dynapuff mb-2">My Applications</h3>
+                     <div id="app-viewer-list" class="h-[70vh] overflow-y-auto space-y-2 pr-2">
+                        <p class="text-gray-500 text-center p-4">Loading applications...</p>
+                     </div>
+                </div>
+                <div class="lg:w-2/3">
+                    <div id="app-viewer-display" class="bg-white p-4 rounded-xl shadow-lg h-[75vh] flex flex-col items-center justify-center text-gray-500">
+                        <!-- PDF will be shown here -->
+                         <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                         <p>Select an application from the list to view it.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PORTAL: DOCUMENTS HUB -->
+    <div id="page-portal-docs" class="portal-page">
+         <div class="w-full max-w-4xl mx-auto my-8 px-4">
+               <button class="back-to-dashboard mb-6 inline-flex items-center text-purple-700 hover:text-purple-900 font-semibold transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Portal Dashboard
+            </button>
+            <div class="text-center mb-10">
+              <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">Committee Documents & Hub</h1>
+              <p class="max-w-2xl mx-auto text-gray-700 arial-nova">
+                A central repository for all essential documents for People's Committee members.
+              </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 <a href="#" class="block bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <h3 class="text-xl font-bold text-purple-800 mb-2 dynapuff">Scoring Guidance</h3>
+                    <p class="text-gray-600 arial-nova mb-4">Detailed breakdown of the scoring matrix and criteria.</p>
+                    <span class="inline-flex items-center bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg dynapuff">Download PDF</span>
+                 </a>
+                 <a href="#" class="block bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <h3 class="text-xl font-bold text-purple-800 mb-2 dynapuff">Committee Contact List</h3>
+                    <p class="text-gray-600 arial-nova mb-4">Contact details for all members of the People's Committee.</p>
+                    <span class="inline-flex items-center bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg dynapuff">Download PDF</span>
+                 </a>
+                 <a href="#" class="block bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <h3 class="text-xl font-bold text-purple-800 mb-2 dynapuff">Meeting Agendas & Minutes</h3>
+                    <p class="text-gray-600 arial-nova mb-4">Access all past and upcoming meeting agendas and minutes.</p>
+                    <span class="inline-flex items-center bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg dynapuff">View Folder</span>
+                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PORTAL: ADMIN MASTER TRACKER -->
+    <div id="page-portal-tracker" class="portal-page admin-only">
+         <div id="master-tracker-content" class="w-full max-w-7xl mx-auto my-8 px-4">
+               <button class="back-to-dashboard mb-6 inline-flex items-center text-purple-700 hover:text-purple-900 font-semibold transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Portal Dashboard
+            </button>
+             <div class="text-center mb-10">
+              <h1 class="text-3xl md:text-4xl font-bold text-purple-700 mb-2 dynapuff">Master Scoring Tracker</h1>
+             </div>
+             <div id="master-tracker-view" class="bg-white p-6 rounded-2xl shadow-xl"></div>
+         </div>
+    </div>
+
+    <!-- Draggable & Resizable PDF Viewer Window -->
+    <div id="pdf-viewer-window" class="hidden fixed top-20 left-10 w-[50vw] h-[75vh] bg-white rounded-lg shadow-2xl flex flex-col border-2 border-purple-200 resize overflow-hidden" style="min-width: 400px; min-height: 500px;">
+        <div id="pdf-viewer-header" class="flex justify-between items-center p-2 bg-gray-100 border-b cursor-move">
+            <h3 id="pdf-viewer-title" class="text-lg font-bold text-gray-800 dynapuff truncate pl-2">Application Viewer</h3>
+            <button id="close-pdf-viewer-btn" class="text-gray-500 hover:text-red-600 p-1 rounded-full">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="flex-grow p-1 bg-gray-200">
+            <iframe id="pdf-viewer-iframe" class="w-full h-full border-0" title="PDF viewer"></iframe>
+        </div>
+    </div>
+
+    <!-- User Guide Modal -->
+    <div id="guide-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[1002] flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                <h2 class="text-2xl font-bold text-purple-700 dynapuff">Scoring Matrix User Guide</h2>
+                 <button id="close-guide-modal-btn" class="text-gray-400 hover:text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto pr-4 space-y-4 text-left arial-nova text-gray-700">
+                 <p class="text-lg">Welcome to the People's Committee Scoring Matrix. This guide will walk you through the process of scoring applications for the Communities' Choice Fund.</p>
+                <div>
+                    <h3 class="font-bold text-lg text-purple-800 dynapuff mt-4">Step 1: Choose an Application to Score</h3>
+                    <p>You can select an application in two ways:</p>
+                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li>Use the 'PB Reference' or 'Applicant' dropdown menus.</li>
+                        <li>Click on an application directly from your 'My Scoring Tasks' list on the right. This is the recommended way to work through your assigned applications.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-lg text-purple-800 dynapuff mt-4">Step 2: Score the Application</h3>
+                    <p>Once an application is loaded, you can begin scoring:</p>
+                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li><strong>Read the Application:</strong> Click the 'View Application PDF' button to open the applicant's PDF in a movable window.</li>
+                        <li><strong>Use the Sliders:</strong> For each criterion, use the slider to select a score from 0 to 3. Your total score will update automatically.</li>
+                        <li><strong>Add Notes (Optional):</strong> You can add notes in the text box to provide context or justification for the score you have given for each criterion. Your progress is saved automatically.</li>
+                        <li><strong>Guidance:</strong> Hover over the <svg class="inline-block w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> icon next to each criterion name for detailed scoring guidance.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-lg text-purple-800 dynapuff mt-4">Step 3: Submitting Your Final Scores</h3>
+                    <p>When you are completely happy with your scores and justification for an application and are ready to submit them, click the <strong>'Post Final Scores'</strong> button. You will be asked to confirm this action.</p>
+                    <p class="font-semibold text-red-600 mt-2">Important: Once you post your scores, you will NOT be able to edit them again. The form for that application will become read-only.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[1003] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 text-center">
+            <div class="w-16 h-16 mx-auto flex items-center justify-center bg-yellow-100 rounded-full mb-4">
+                 <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h2 id="confirmation-modal-title" class="text-2xl font-bold text-gray-800 mb-2 dynapuff">Are you sure?</h2>
+            <p id="confirmation-modal-message" class="text-gray-600 mb-6 arial-nova">You won't be able to revert this!</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirmation-modal-cancel" class="py-2 px-6 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors dynapuff">Cancel</button>
+                <button id="confirmation-modal-confirm" class="py-2 px-6 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors dynapuff">Yes, I'm sure</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score Edit Modal -->
+    <div id="score-edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[1004] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                <h2 id="score-edit-modal-title" class="text-2xl font-bold text-purple-700 dynapuff">Edit Score</h2>
+                <button id="close-score-edit-modal-btn" class="text-gray-400 hover:text-red-600 hover:bg-red-100 p-1 rounded-full transition-colors">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto pr-4 flex-grow">
+                <input type="hidden" id="edit-score-doc-id">
+                <div id="score-edit-modal-body" class="overflow-x-auto">
+                    <!-- Scoring table for editing will be injected here -->
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-end gap-4">
+                <div class="flex items-center space-x-4 mr-auto">
+                    <h3 class="text-lg font-bold text-gray-800 dynapuff">New Total:</h3>
+                    <span id="edit-scoring-total" class="text-2xl font-bold text-purple-700">0 / 100</span>
+                </div>
+                <button id="score-edit-modal-cancel" class="py-2 px-6 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors dynapuff">Cancel</button>
+                <button id="score-edit-modal-save" class="py-2 px-6 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors dynapuff">Save Changes</button>
+            </div>
+        </div>
+    </div>
+  </main>
+  
+  <!-- Firebase SDK & App Logic -->
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+        getAuth, 
+        onAuthStateChanged, 
+        signOut,
+        signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+        getFirestore, 
+        setLogLevel,
+        doc, 
+        getDoc, 
+        setDoc, 
+        deleteDoc, 
+        collection, 
+        onSnapshot, 
+        query, 
+        where, getDocs,
+        enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    
+    // ---------------
+    // GLOBAL STATE & FIREBASE
+    // ---------------
+    let currentScoringState = {};
+
+    let app;
+    let auth;
+    let db;
+    let currentUserProfile = null;
+    let progressChart = null; // To hold the chart instance
+    let currentEditScoreData = {};
+
+
+    let scoresCollectionRef;
+    let taskListenerUnsubscribe = null; 
+    let adminDashboardUnsubscribe = null;
+    let masterTrackerUnsubscribe = null;
+    let confirmationCallback = null;
+    
+    // ---------------
+    // LOGIN OVERLAY UI (from auth.js)
+    // ---------------
+    function ensureOverlay(){
+      if (document.getElementById("cc-login-overlay")) return;
+      const w=document.createElement("div");
+      w.innerHTML=`
+      <div id="cc-login-overlay" style="display:none;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;">
+        <div style="background:#fff;border-radius:16px;width:min(520px,92vw);padding:24px 24px 28px;box-shadow:0 30px 60px rgba(0,0,0,.25);">
+          <h2 style="margin:0 0 8px;font-family:system-ui,sans-serif">Committee Portal Login</h2>
+          <p style="margin:0 18px 18px 0;color:#555">Please sign in with your username and password.</p>
+          <form id="cc-login-form">
+            <label style="display:block;font-weight:600;margin:10px 0 6px;">Username</label>
+            <input id="cc-username" autocomplete="username" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+            <label style="display:block;font-weight:600;margin:16px 0 6px;">Password</label>
+            <input id="cc-password" type="password" autocomplete="current-password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px" />
+            <div id="cc-login-error" style="color:#c00;margin:8px 0 0;display:none"></div>
+            <button type="submit" style="margin-top:14px;width:100%;padding:12px 14px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;cursor:pointer">Sign in</button>
+          </form>
+        </div>
+      </div>`;
+      document.body.appendChild(w.firstElementChild);
+      document.getElementById("cc-login-form")?.addEventListener("submit", doLogin);
+    }
+
+    function showLoginOverlay(show){ 
+        ensureOverlay();
+        const o=document.getElementById("cc-login-overlay"); 
+        if(o) o.style.display=show?"flex":"none"; 
+    }
+
+    function setLoginError(m){ 
+        const e=document.getElementById("cc-login-error"); 
+        if(e){ 
+            e.textContent=m||""; 
+            e.style.display=m?"block":"none"; 
+        } 
+    }
+
+    // ---------------
+    // MODAL & UI HELPERS
+    // ---------------
+    function openGuideModal() {
+        document.getElementById('guide-modal')?.classList.remove('hidden');
+        document.documentElement.classList.add('modal-open');
+    }
+
+    function closeGuideModal() {
+        document.getElementById('guide-modal')?.classList.add('hidden');
+        document.documentElement.classList.remove('modal-open');
+    }
+
+    function showConfirmationModal(message, onConfirmCallback) {
+        document.getElementById('confirmation-modal-title').textContent = "Are you sure?";
+        document.getElementById('confirmation-modal-cancel').style.display = 'inline-flex';
+        document.getElementById('confirmation-modal-confirm').textContent = "Yes, I'm sure";
+        document.getElementById('confirmation-modal-message').textContent = message;
+        confirmationCallback = onConfirmCallback;
+        document.getElementById('confirmation-modal').classList.remove('hidden');
+        document.documentElement.classList.add('modal-open');
+    }
+
+    function hideConfirmationModal() {
+        document.getElementById('confirmation-modal').classList.add('hidden');
+        document.documentElement.classList.remove('modal-open');
+        confirmationCallback = null;
+    }
+
+    function handleConfirm() {
+        if (typeof confirmationCallback === 'function') {
+            confirmationCallback();
+        }
+        hideConfirmationModal();
+    }
+    
+    function showMessage(message, title = "Alert") {
+         showConfirmationModal(message, null);
+         document.getElementById('confirmation-modal-title').textContent = title;
+         document.getElementById('confirmation-modal-cancel').style.display = 'none';
+         const confirmBtn = document.getElementById('confirmation-modal-confirm');
+         confirmBtn.textContent = "OK";
+         confirmBtn.onclick = hideConfirmationModal;
+    }
+
+
+    // ---------------
+    // PAGE NAVIGATION & AUTH
+    // ---------------
+     function showPortalPage(pageId) {
+        if (!currentUserProfile) return;
+
+        document.querySelectorAll('.portal-page').forEach(p => p.style.display = 'none');
+        const newPage = document.getElementById(pageId);
+        if (newPage) newPage.style.display = 'block';
+
+        const isAdmin = currentUserProfile.role === 'admin';
+        document.getElementById('nav-portal-home').dataset.portalPage = isAdmin ? 'page-admin-dashboard' : 'page-portal-dashboard';
+        
+        document.querySelectorAll('.back-to-dashboard').forEach(btn => {
+            btn.dataset.portalPage = isAdmin ? 'page-admin-dashboard' : 'page-portal-dashboard';
+        });
+
+        if (pageId === 'page-scoring') initializeScoringMatrix();
+        if (pageId === 'page-portal-apps') initializeAppsViewer();
+        if (pageId === 'page-portal-tracker') initializeMasterTracker();
+        if (pageId === 'page-admin-dashboard') initializeAdminDashboard();
+        
+        window.scrollTo(0, 0);
+    }
+    
+    async function doLogin(e) {
+        e.preventDefault(); 
+        setLoginError("");
+        const username = document.getElementById("cc-username")?.value?.trim() || "";
+        const password = document.getElementById("cc-password")?.value || "";
+        if (!username || !password) {
+            setLoginError("Please enter username and password.");
+            return;
+        }
+
+        try {
+            // Assume usernames are like 'dwilliams' and Firebase emails are 'dwilliams@users.local'
+            const email = `${username}@users.local`;
+            await signInWithEmailAndPassword(auth, email, password);
+            // onAuthStateChanged will handle the rest
+        } catch (error) {
+            console.error("Firebase login failed:", error.code, error.message);
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                setLoginError("Invalid username or password.");
+            } else {
+                setLoginError("An error occurred during login.");
+            }
+        }
+    }
+    
+    async function logout() {
+        if (taskListenerUnsubscribe) taskListenerUnsubscribe();
+        if (adminDashboardUnsubscribe) adminDashboardUnsubscribe();
+        if (masterTrackerUnsubscribe) masterTrackerUnsubscribe();
+        taskListenerUnsubscribe = null;
+        adminDashboardUnsubscribe = null;
+        masterTrackerUnsubscribe = null;
+        
+        await signOut(auth);
+        // onAuthStateChanged will show the login overlay
+    }
+
+    async function handleAuthState(user) {
+        if (user) {
+            try {
+                // User is signed in, hide login and fetch profile
+                showLoginOverlay(false);
+                setLoginError("");
+
+                const uname = (user.email || '').replace('@users.local','');
+                
+                const cmRef = collection(db, 'committeeMembers');
+                const q = query(cmRef, where('username', '==', uname));
+                const snap = await getDocs(q);
+
+                let profileDoc = null;
+                if (!snap.empty) {
+                    profileDoc = snap.docs[0];
+                } else {
+                    console.warn(`Username lookup failed for '${uname}'. Trying UID fallback: ${user.uid}`);
+                    const byUidRef = doc(db, 'committeeMembers', user.uid);
+                    const byUidSnap = await getDoc(byUidRef);
+                    if (byUidSnap.exists()) {
+                        profileDoc = byUidSnap;
+                    }
+                }
+
+                if (profileDoc) {
+                    currentUserProfile = profileDoc.data();
+                    document.getElementById('user-info').textContent = `Welcome, ${currentUserProfile.name}`;
+                    document.getElementById('portal-nav').style.display = 'flex';
+
+                    document.querySelectorAll('.admin-only').forEach(el => {
+                        el.style.display = currentUserProfile.role === 'admin' ? 'inline-flex' : 'none';
+                    });
+
+                    showPortalPage(currentUserProfile.role === 'admin' ? 'page-admin-dashboard' : 'page-portal-dashboard');
+                } else {
+                    console.error("Authenticated but no profile found for", uname, user.uid);
+                    showMessage("Login successful, but profile not found. Contact administrator.", "Profile Error");
+                    await logout();
+                }
+            } catch (err) {
+                console.error("Error fetching profile:", err);
+                showMessage("Error fetching user profile. Check Firestore rules or contact administrator.", "Profile Error");
+                await logout();
+            }
+        } else {
+            // User is not logged in, show the login overlay.
+            currentUserProfile = null;
+            document.querySelectorAll('.portal-page').forEach(p => p.style.display = 'none');
+            document.getElementById('portal-nav').style.display = 'none';
+            showLoginOverlay(true);
+        }
+    }
+
+    // -----------------------
+    // SCORING MATRIX
+    // -----------------------
+    const SCORING_DATA = {
+        APPLICATIONS: [
+            { ref: "PBBLN001", applicant: "Blaenavon Blues FC", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN001.pdf" },
+            { ref: "PBBLN002", applicant: "Blaenavon Camera Club", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN002.pdf" },
+            { ref: "PBBLN003", applicant: "Blaenavon Community Museum", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN003.pdf" },
+            { ref: "PBBLN004", applicant: "Blaenavon Male Voice Choir", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN004.pdf" },
+            { ref: "PBBLN005", applicant: "Blaenavon Mini and Juniors RFC", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN005.pdf" },
+            { ref: "PBBLN006", applicant: "Blaenavon Netball", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN006.pdf" },
+            { ref: "PBBLN007", applicant: "Blaenavon Town Band", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN007.pdf" },
+            { ref: "PBBLN008", applicant: "Blaenavon Youth Strategy", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN008.pdf" },
+            { ref: "PBBLN009", applicant: "Garnsychan Partnership", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN009.pdf" },
+            { ref: "PBBLN010", applicant: "Horticultural Group - Blaenavon Heritage School", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN010.pdf" },
+            { ref: "PBBLN011", applicant: "Little Oaks Retreat", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN011.pdf" },
+            { ref: "PBBLN012", applicant: "Torfaen Youth Service", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN012.pdf" },
+            { ref: "PBBLN013", applicant: "Welsh Language Conversation", area: "Blaenavon", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBBLN013.pdf" },
+            { ref: "PBTUP001", applicant: "Able", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP001.pdf" },
+            { ref: "PBTUP002", applicant: "Blaenbran Community Woodland", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP002.pdf" },
+            { ref: "PBTUP003", applicant: "Garden of Hope - RecoverED", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP003.pdf" },
+            { ref: "PBTUP004", applicant: "Graffiti Tutor", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP004.pdf" },
+            { ref: "PBTUP005", applicant: "HIP HOP 12", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP005.pdf" },
+            { ref: "PBTUP006", applicant: "Mindful Munch Café LLP", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP006.pdf" },
+            { ref: "PBTUP007", applicant: "MOVE Against Cancer", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP007.pdf" },
+            { ref: "PBTUP008", applicant: "Pontnewydd Male Voice Choir", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP008.pdf" },
+            { ref: "PBTUP009", applicant: "Thornhill Community Centre - Messy Family Play (1)", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP009.pdf" },
+            { ref: "PBTUP010", applicant: "Thornhill Community Centre - Play and Respite (2)", area: "Thornhill & Upper Cwmbran", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTUP010.pdf" },
+            { ref: "PBTPS001", applicant: "Age Connects", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS001.pdf" },
+            { ref: "PBTPS002", applicant: "CBF - MUGA", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS002.pdf" },
+            { ref: "PBTPS003", applicant: "Penygarn & Trevethin FC", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS003.pdf" },
+            { ref: "PBTPS004", applicant: "Pleasant Court", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS004.pdf" },
+            { ref: "PBTPS005", applicant: "Studio 77", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS005.pdf" },
+            { ref: "PBTPS006", applicant: "TIDY BUTT", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS006.pdf" },
+            { ref: "PBTPS007", applicant: "Torfaen Museum Trust", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS007.pdf" },
+            { ref: "PBTPS008", applicant: "Torfaen Young Parents Group", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS008.pdf" },
+            { ref: "PBTPS009", applicant: "Trevethin Community Centre", area: "Trevethin, Penygarn & St. Cadocs", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBTPS009.pdf" },
+            { ref: "PBCRS001", applicant: "Abersychan Comprehensive School", area: "Cross-Area Application", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBCRS001.pdf" },
+            { ref: "PBCRS002", applicant: "Giving Hope Torfaen", area: "Cross-Area Application", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBCRS002.pdf" },
+            { ref: "PBCRS003", applicant: "Menterorar Taking Pride In Young People", area: "Cross-Area Application", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBCRS003.pdf" },
+            { ref: "PBCRS004", applicant: "Torfaen Talks CIC", area: "Cross-Area Application", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBCRS004.pdf" },
+            { ref: "PBCRS005", applicant: "Wrestle Cymru", area: "Cross-Area Application", pdfUrl: "https://cdn.jsdelivr.net/gh/danwtva-source/applications-test@main/PBCRS005.pdf" }
+        ],
+        CRITERIA_TEMPLATE: [
+            { id: "priority", name: "Alignment with Local Priorities", guidance: "How well does the project align with the identified priorities for the area?", weight: 10, details: "<b>0:</b> No alignment with local priorities.<br><b>1:</b> Weak or unclear link to local priorities.<br><b>2:</b> Clear alignment with one or more local priorities.<br><b>3:</b> Strong, direct alignment with a top local priority." },
+            { id: "impact", name: "Community Impact & Benefit", guidance: "How significant is the project's potential benefit to the community?", weight: 10, details: "<b>0:</b> No clear community benefit.<br><b>1:</b> Benefits a small, specific group of people.<br><b>2:</b> Benefits a significant portion of the community.<br><b>3:</b> Wide-reaching, significant, and lasting benefits for the community." },
+            { id: "deliverability", name: "Deliverability & Value for Money", guidance: "How realistic is the project plan and budget? Does it represent good value?", weight: 10, details: "<b>0:</b> Unrealistic plan or budget; poor value for money.<br><b>1:</b> Some concerns about the plan's feasibility or budget justification.<br><b>2:</b> Realistic plan and budget that represents reasonable value.<br><b>3:</b> Excellent, well-thought-out plan and a well-justified budget offering exceptional value." },
+            { id: "engagement", name: "Community Engagement & Collaboration", guidance: "How well does the project involve the community and collaborate with others?", weight: 10, details: "<b>0:</b> No evidence of community engagement or collaboration.<br><b>1:</b> Some consultation with the community or partners mentioned.<br><b>2:</b> Actively involves community members in the project's design or delivery.<br><b>3:</b> Strong partnerships and co-design with the community are central to the project." },
+            { id: "sustainability", name: "Sustainability & Legacy", guidance: "Does the project have a plan for continuation or lasting impact?", weight: 10, details: "<b>0:</b> No legacy or plan for sustainability.<br><b>1:</b> The project is short-term with no clear lasting impact.<br><b>2:</b> The project has the potential for lasting impact or continuation.<br><b>3:</b> The project has a clear and realistic plan for continuation and lasting community benefit." },
+            { id: "marmot", name: "Alignment with Marmot Principles", guidance: "How effectively does the project address health inequalities?", weight: 10, details: "<b>0:</b> No alignment.<br><b>1:</b> Weak link to principles.<br><b>2:</b> Clearly addresses one or more principles.<br><b>3:</b> Strong alignment with practical examples." },
+            { id: "wfg", name: "Well-being of Future Generations (Wales) Act", guidance: "How does the project contribute to the well-being goals for Wales?", weight: 10, details: "<b>0:</b> No contribution.<br><b>1:</b> Weak link to goals.<br><b>2:</b> Clearly contributes to one or more goals.<br><b>3:</b> Strong alignment with practical examples." },
+            { id: "innovation", name: "Innovation & Creativity", guidance: "Does the project offer a new or creative solution to a community issue?", weight: 10, details: "<b>0:</b> Conventional approach.<br><b>1:</b> Some new elements.<br><b>2:</b> Creative and innovative approach.<br><b>3:</b> Highly original and inspiring solution." },
+            { id: "inclusivity", name: "Inclusivity & Equality", guidance: "How well does the project include and benefit diverse groups?", weight: 10, details: "<b>0:</b> Not inclusive.<br><b>1:</b> Limited reach to diverse groups.<br><b>2:</b> Accessible to most community groups.<br><b>3:</b> Proactively inclusive and removes barriers to participation." },
+            { id: "evidence", name: "Evidence of Need", guidance: "Is there clear evidence that this project is needed in the community?", weight: 10, details: "<b>0:</b> No evidence of need provided.<br><b>1:</b> Anecdotal evidence of need.<br><b>2:</b> Supported by some local data or consultation.<br><b>3:</b> Strong evidence from community consultation and data." }
+        ]
+    };
+
+    function initializeScoringMatrix() {
+        if (!currentUserProfile) return;
+        updateMemberAndView();
+    }
+    
+    function updateMemberAndView() {
+        if (!currentUserProfile) return;
+        
+        const filteredApps = getFilteredAppsForMember(currentUserProfile);
+        populateApplicationDropdowns(filteredApps);
+
+        const currentRef = document.getElementById('scoring-ref').value;
+        if (currentRef && !filteredApps.some(app => app.ref === currentRef)) {
+            handleAppSelection('');
+        } else {
+            handleAppSelection(currentRef || (filteredApps.length > 0 ? filteredApps[0].ref : ''));
+        }
+
+        if (taskListenerUnsubscribe) taskListenerUnsubscribe();
+        const q = query(scoresCollectionRef, where("scorerId", "==", auth.currentUser.uid));
+        taskListenerUnsubscribe = onSnapshot(q, (querySnapshot) => {
+            const userScores = [];
+            querySnapshot.forEach((doc) => {
+                userScores.push({ ref: doc.data().ref, ...doc.data() });
+            });
+            renderTaskList(userScores);
+        });
+    }
+    
+    function getFilteredAppsForMember(memberProfile) {
+        if (!memberProfile) return [];
+        if (memberProfile.role === 'admin') return SCORING_DATA.APPLICATIONS;
+        
+        const memberArea = memberProfile.area;
+        return SCORING_DATA.APPLICATIONS.filter(app => {
+            return app.area === memberArea || app.area === 'Cross-Area Application';
+        });
+    }
+
+    function populateApplicationDropdowns(apps) {
+        const refSelect = document.getElementById('scoring-ref');
+        const applicantSelect = document.getElementById('scoring-applicant');
+        const currentRef = refSelect.value; 
+
+        refSelect.innerHTML = '<option value="">Select Reference...</option>';
+        apps.forEach(app => refSelect.add(new Option(app.ref, app.ref)));
+
+        applicantSelect.innerHTML = '<option value="">Select Applicant...</option>';
+        apps.forEach(app => applicantSelect.add(new Option(app.applicant.trim(), app.ref)));
+        
+        if (apps.some(app => app.ref === currentRef)) {
+            refSelect.value = currentRef; 
+            applicantSelect.value = currentRef;
+        } else {
+            refSelect.value = '';
+            applicantSelect.value = '';
+        }
+    }
+
+    async function handleAppSelection(ref) {
+        document.getElementById('scoring-ref').value = ref;
+        document.getElementById('scoring-applicant').value = ref;
+
+        const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === ref);
+        document.getElementById('scoring-area').value = app ? app.area : '';
+
+        await loadScoresForRef(ref);
+    }
+    
+     function initializeAppsViewer() {
+        if (!currentUserProfile) return;
+        populateAppsViewerList(currentUserProfile);
+    }
+
+    function populateAppsViewerList(memberProfile) {
+        const listContainer = document.getElementById('app-viewer-list');
+        const apps = getFilteredAppsForMember(memberProfile);
+        listContainer.innerHTML = '';
+        if (!apps || apps.length === 0) {
+             listContainer.innerHTML = `<p class="text-gray-500 text-center p-4">No applications assigned.</p>`;
+             return;
+        }
+
+        apps.forEach(app => {
+            const button = document.createElement('button');
+            button.className = 'w-full text-left p-3 rounded-md hover:bg-purple-100 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500';
+            button.dataset.ref = app.ref;
+            button.innerHTML = `
+                <div class="font-bold text-gray-800">${app.applicant}</div>
+                <div class="text-sm text-gray-500">${app.ref} - ${app.area}</div>
+            `;
+            button.addEventListener('click', () => viewApplication(app.ref));
+            listContainer.appendChild(button);
+        });
+    }
+
+
+    function viewApplication(ref) {
+        const displayContainer = document.getElementById('app-viewer-display');
+        const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === ref);
+        
+         document.querySelectorAll('#app-viewer-list button').forEach(btn => {
+            btn.classList.toggle('bg-purple-200', btn.dataset.ref === ref);
+        });
+
+        const pdfUrl = app ? app.pdfUrl : '';
+        if (app) {
+            displayContainer.innerHTML = `
+                <div class="w-full p-2 bg-gray-100 rounded-t-lg border-b">
+                    <h3 class="font-bold text-gray-800">${app.applicant} (${app.ref})</h3>
+                </div>
+                <iframe src="${pdfUrl}" class="w-full h-full" title="PDF viewer for ${app.applicant}"></iframe>
+            `;
+        } else {
+            displayContainer.innerHTML = `<p>Application not found.</p>`;
+        }
+    }
+
+    function openPdfViewerForCurrentApp() {
+        const ref = document.getElementById('scoring-ref').value;
+        if (!ref) return;
+        const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === ref);
+        if (!app) return;
+        
+        const viewer = document.getElementById('pdf-viewer-window');
+        const title = document.getElementById('pdf-viewer-title');
+        const iframe = document.getElementById('pdf-viewer-iframe');
+
+        title.textContent = `${app.applicant} (${app.ref})`;
+        iframe.src = app.pdfUrl;
+        
+        if (!viewer.dataset.hasBeenMoved) {
+            viewer.style.top = '50%';
+            viewer.style.left = '50%';
+            viewer.style.transform = 'translate(-50%, -50%)';
+        }
+        viewer.classList.remove('hidden');
+    }
+
+    function closePdfViewer() {
+        const viewer = document.getElementById('pdf-viewer-window');
+        const iframe = document.getElementById('pdf-viewer-iframe');
+        iframe.src = 'about:blank'; 
+        viewer.classList.add('hidden');
+    }
+    
+    function makePdfViewerDraggable() {
+        const viewer = document.getElementById('pdf-viewer-window');
+        const header = document.getElementById('pdf-viewer-header');
+        let isDragging = false, startX, startY, initialX, initialY;
+
+        header.addEventListener('mousedown', function (e) {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            if (viewer.style.transform && viewer.style.transform !== 'none') {
+                 const rect = viewer.getBoundingClientRect();
+                 initialX = rect.left;
+                 initialY = rect.top;
+                 viewer.style.transform = 'none';
+                 viewer.style.left = `${initialX}px`;
+                 viewer.style.top = `${initialY}px`;
+            } else {
+                 initialX = viewer.offsetLeft;
+                 initialY = viewer.offsetTop;
+            }
+            viewer.dataset.hasBeenMoved = 'true';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        function onMouseMove(e) {
+            if (isDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const newX = Math.max(0, Math.min(initialX + dx, window.innerWidth - viewer.offsetWidth));
+                const newY = Math.max(0, Math.min(initialY + dy, window.innerHeight - viewer.offsetHeight));
+                viewer.style.left = `${newX}px`;
+                viewer.style.top = `${newY}px`;
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+    }
+
+    // Task List Functions
+    function loadTask(ref) {
+        document.getElementById('scoring-ref').value = ref;
+        document.getElementById('scoring-ref').dispatchEvent(new Event('change'));
+    }
+
+    function renderTaskList(userScores = []) {
+        const container = document.getElementById('task-list-content');
+        const summaryContainer = document.getElementById('task-list-summary');
+        
+        if (!currentUserProfile) {
+            container.innerHTML = `<p class="text-gray-500 p-2">Loading...</p>`;
+            summaryContainer.innerHTML = '';
+            return;
+        }
+
+        const memberApps = getFilteredAppsForMember(currentUserProfile);
+        if (memberApps.length === 0) {
+            container.innerHTML = `<p class="text-gray-500 p-2">No applications assigned to your area.</p>`;
+            summaryContainer.innerHTML = '';
+            return;
+        }
+
+        let completedCount = 0;
+        const tasksHtml = memberApps.map(app => {
+            const scoreData = userScores.find(s => s.ref === app.ref);
+            let statusBadge = '';
+            if (scoreData && scoreData.isFinal) {
+                completedCount++;
+                statusBadge = '<span class="text-xs font-bold text-teal-600 bg-teal-100 px-2 py-1 rounded-full">Completed</span>';
+            } else if (scoreData) {
+                statusBadge = '<span class="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">In Progress</span>';
+            } else {
+                statusBadge = '<span class="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full">Pending</span>';
+            }
+            return `<button data-task-ref="${app.ref}" class="w-full text-left p-2 rounded-md task-list-button"><div class="flex justify-between items-center"><span class="text-sm">${app.ref} - ${app.applicant}</span>${statusBadge}</div></button>`;
+        }).join('');
+        
+        container.innerHTML = tasksHtml;
+        
+        const progress = memberApps.length > 0 ? (completedCount / memberApps.length) * 100 : 0;
+        if (progress === 100 && memberApps.length > 0) {
+            summaryContainer.innerHTML = `<div class="text-center p-4 bg-teal-100 text-teal-800 rounded-lg mt-4 font-bold">🎉 All applications scored!</div>`;
+        } else {
+            summaryContainer.innerHTML = `<p class="text-sm font-semibold text-gray-700">${completedCount} of ${memberApps.length} scored.</p><div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-teal-600 h-2.5 rounded-full" style="width: ${progress}%"></div></div>`;
+        }
+    }
+    
+    // Admin Master Tracker
+    async function deleteScore(docId) {
+        showConfirmationModal(`Are you sure you want to PERMANENTLY delete this score? This action cannot be undone.`, async () => {
+             try {
+                const docRef = doc(scoresCollectionRef, docId);
+                await deleteDoc(docRef);
+                console.log("Score deleted successfully");
+            } catch (error) {
+                console.error("Error deleting score: ", error);
+                showMessage("Failed to delete score. See console for details.", "Error");
+            }
+        });
+    }
+
+    function initializeMasterTracker() {
+        if (masterTrackerUnsubscribe) masterTrackerUnsubscribe();
+        masterTrackerUnsubscribe = onSnapshot(scoresCollectionRef, (snapshot) => {
+            const allScores = [];
+            snapshot.forEach(doc => allScores.push({ id: doc.id, ...doc.data() }));
+            renderMasterTrackerView(allScores);
+        });
+    }
+
+    function renderMasterTrackerView(allScores) {
+        const container = document.getElementById('master-tracker-view');
+        if (!currentUserProfile || currentUserProfile.role !== 'admin') {
+            container.innerHTML = `<div class="text-center p-8 bg-red-50 border-2 border-red-200 rounded-lg"><h2 class="text-2xl font-bold text-red-700 dynapuff">Access Denied</h2><p class="text-red-600 mt-2">You must be an administrator to view the master tracker.</p></div>`;
+            return;
+        }
+
+        if (allScores.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-500">The Master Tracker is currently empty.</p>`;
+            return;
+        }
+        
+         const scoresByApp = allScores.reduce((acc, score) => {
+            if (!acc[score.ref]) {
+                const appDetails = SCORING_DATA.APPLICATIONS.find(a => a.ref === score.ref);
+                acc[score.ref] = { ...appDetails, scores: [] };
+            }
+            acc[score.ref].scores.push({ ...score });
+            return acc;
+        }, {});
+
+        const appHtml = Object.values(scoresByApp).map(app => {
+            const scoresHtml = app.scores.map(s => `
+                <div class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                    <div>
+                        <span class="font-semibold text-gray-700">${s.scorerName}</span>
+                        <span class="font-bold text-purple-700 ml-4">${s.totalScore} / 100</span>
+                    </div>
+                    <div class="flex items-center">
+                        <button data-edit-id="${s.id}" class="edit-score-btn text-blue-500 hover:text-blue-700 p-1 rounded-full transition-colors" title="Edit this score">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button data-delete-id="${s.id}" class="delete-score-btn text-red-500 hover:text-red-700 p-1 rounded-full transition-colors" title="Delete this score">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            return `<div class="border border-gray-200 rounded-lg overflow-hidden"><div class="bg-gray-100 p-3"><h4 class="font-bold text-lg text-purple-800 dynapuff">${app.applicant}</h4><p class="text-sm text-gray-600">${app.ref} - ${app.area}</p></div><div class="p-3 space-y-2">${scoresHtml}</div></div>`;
+        }).join('');
+        
+        container.innerHTML = `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">${appHtml}</div>`;
+    }
+
+    function initializeAdminDashboard() {
+        const filterSelect = document.getElementById('admin-area-filter');
+        let allScoresCache = [];
+        let allMembersCache = [];
+
+        const render = () => {
+            if (!db) return;
+            
+            let committeeMembers = allMembersCache;
+            if (filterSelect.value !== 'All') {
+                committeeMembers = committeeMembers.filter(m => m.area === filterSelect.value);
+            }
+            renderAdminDashboard(committeeMembers, allScoresCache);
+            renderAdminChartsAndSummary(committeeMembers, allScoresCache);
+        };
+
+        const committeeMembersCollectionRef = collection(db, 'committeeMembers');
+        getDocs(query(committeeMembersCollectionRef, where("role", "==", "member"))).then(snapshot => {
+             snapshot.forEach(doc => allMembersCache.push(doc.data()));
+             render();
+        });
+
+        if (adminDashboardUnsubscribe) adminDashboardUnsubscribe();
+        adminDashboardUnsubscribe = onSnapshot(scoresCollectionRef, (snapshot) => {
+            allScoresCache = [];
+            snapshot.forEach(doc => allScoresCache.push(doc.data()));
+            render();
+        });
+
+        filterSelect.addEventListener('change', render);
+    }
+    
+    function renderAdminChartsAndSummary(committeeMembers, allScores) {
+        const areas = ["Blaenavon", "Thornhill & Upper Cwmbran", "Trevethin, Penygarn & St. Cadocs"];
+        const areaData = {
+            labels: areas,
+            datasets: [{
+                label: 'Completed',
+                data: [],
+                backgroundColor: 'rgba(20, 184, 166, 0.6)', // teal-500
+                borderColor: 'rgba(13, 148, 136, 1)', // teal-600
+                borderWidth: 1
+            }, {
+                label: 'Outstanding',
+                data: [],
+                backgroundColor: 'rgba(244, 63, 94, 0.6)', // rose-500
+                borderColor: 'rgba(225, 29, 72, 1)', // rose-600
+                borderWidth: 1
+            }]
+        };
+        
+        let totalAppsToScore = 0;
+        let totalScoresCompleted = 0;
+
+        areas.forEach(area => {
+            const membersInArea = committeeMembers.filter(m => m.area === area);
+            const appsForArea = SCORING_DATA.APPLICATIONS.filter(app => app.area === area || app.area === 'Cross-Area Application');
+            
+            let totalPossibleScoresInArea = membersInArea.length * appsForArea.length;
+            let completedScoresInArea = 0;
+
+            membersInArea.forEach(member => {
+                appsForArea.forEach(app => {
+                    if (allScores.some(s => s.scorerName === member.name && s.ref === app.ref && s.isFinal)) {
+                        completedScoresInArea++;
+                    }
+                });
+            });
+
+            totalAppsToScore += totalPossibleScoresInArea;
+            totalScoresCompleted += completedScoresInArea;
+
+            areaData.datasets[0].data.push(completedScoresInArea); // Completed
+            areaData.datasets[1].data.push(totalPossibleScoresInArea - completedScoresInArea); // Outstanding
+        });
+
+        const ctx = document.getElementById('progress-chart').getContext('2d');
+        if (progressChart) {
+            progressChart.destroy();
+        }
+        progressChart = new Chart(ctx, {
+            type: 'bar',
+            data: areaData,
+            options: {
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                responsive: true,
+                plugins: {
+                    title: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+            }
+        });
+
+        // Render summary stats
+        const summaryContainer = document.getElementById('overall-summary-stats');
+        const overallCompletion = totalAppsToScore > 0 ? ((totalScoresCompleted / totalAppsToScore) * 100).toFixed(1) : 0;
+        summaryContainer.innerHTML = `
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Total Members Scoring:</span><span class="font-bold text-purple-700">${committeeMembers.length}</span></div>
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Total Scoring Tasks:</span><span class="font-bold text-purple-700">${totalAppsToScore}</span></div>
+            <div class="flex justify-between items-center text-lg"><span class="text-gray-600">Completed Scores:</span><span class="font-bold text-teal-600">${totalScoresCompleted}</span></div>
+            <div class="mt-4">
+                <p class="text-sm font-semibold text-gray-700 text-center">Overall Completion: ${overallCompletion}%</p>
+                <div class="w-full bg-gray-200 rounded-full h-4 mt-1">
+                    <div class="bg-teal-600 h-4 rounded-full text-white text-xs flex items-center justify-center" style="width: ${overallCompletion}%">${overallCompletion > 10 ? overallCompletion + '%' : ''}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderAdminDashboard(committeeMembers, allScores) {
+        const container = document.getElementById('admin-dashboard-content');
+        if (!container) return;
+        
+        const memberCardsHtml = committeeMembers.map(member => {
+            const assignedApps = getFilteredAppsForMember(member);
+            let completedCount = 0;
+            const applistHtml = assignedApps.map(app => {
+                const score = allScores.find(s => s.scorerName === member.name && s.ref === app.ref);
+                let isComplete = false;
+                if (score && score.isFinal) {
+                    completedCount++;
+                    isComplete = true;
+                }
+                return `<li class="flex justify-between items-center text-sm py-1"><span>${app.ref}</span>${isComplete ? '<span class="text-xs font-semibold text-teal-700">Completed</span>' : '<span class="text-xs font-semibold text-red-700">Outstanding</span>'}</li>`;
+            }).join('');
+            const totalCount = assignedApps.length;
+            const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+            return `<div class="bg-white p-6 rounded-xl shadow-lg"><h3 class="text-xl font-bold text-purple-800 dynapuff">${member.name}</h3><p class="text-sm text-gray-600 mb-3">${member.area}</p><div class="mb-2"><p class="text-sm font-semibold text-gray-700">${completedCount} of ${totalCount} scored.</p><div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-teal-600 h-2.5 rounded-full" style="width: ${progress}%"></div></div></div><details><summary class="text-sm font-semibold text-purple-600 cursor-pointer hover:underline">View Assigned</summary><ul class="mt-2 space-y-1 divide-y divide-gray-200">${applistHtml}</ul></details></div>`;
+        }).join('');
+        container.innerHTML = `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">${memberCardsHtml}</div>`;
+    }
+
+    function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+    async function loadScoresForRef(ref) {
+        const finalizedMessage = document.getElementById('scoring-finalized-message');
+        const saveButton = document.getElementById('scoring-post-final'); 
+        
+        finalizedMessage.classList.add('hidden');
+        document.getElementById('view-pdf-button').disabled = !ref;
+
+        if (!ref || !currentUserProfile || !auth.currentUser) {
+            currentScoringState = {};
+            renderScoringMatrix([]);
+            updateTotalsAndOutcome();
+            return;
+        }
+        
+        const docId = `${auth.currentUser.uid}_${ref}`;
+        const docRef = doc(scoresCollectionRef, docId);
+        const docSnap = await getDoc(docRef);
+        const savedData = docSnap.exists() ? docSnap.data() : {};
+
+        const criteria = deepClone(SCORING_DATA.CRITERIA_TEMPLATE).map(c => {
+            const savedCriterion = savedData.criteria ? savedData.criteria.find(sc => sc.id === c.id) : null;
+            return { ...c, score: savedCriterion?.score ?? 0, notes: savedCriterion?.notes ?? '' };
+        });
+        
+        currentScoringState = { ref, criteria, isFinal: savedData.isFinal || false };
+        renderScoringMatrix(criteria);
+        updateTotalsAndOutcome();
+
+        const isFinal = savedData.isFinal || false;
+        document.querySelectorAll('#scoring-matrix-body input, #scoring-matrix-body textarea, #scoring-clear').forEach(el => el.disabled = isFinal);
+        saveButton.disabled = isFinal;
+
+        if(isFinal) {
+            finalizedMessage.textContent = "These scores have been posted and are now read-only.";
+            finalizedMessage.classList.remove('hidden');
+        }
+    }
+    
+    function renderScoringMatrix(criteria) {
+        const tbody = document.getElementById('scoring-matrix-body');
+        tbody.innerHTML = ''; 
+
+        if (!currentUserProfile) {
+             tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-8">Authenticating...</td></tr>`;
+             return;
+        }
+        if (criteria.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-8">Please select an application to begin scoring.</td></tr>`;
+            return;
+        }
+
+        criteria.forEach(c => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td class="font-bold text-gray-800"><div class="flex items-center"><span>${c.name}</span><div class="tooltip-container"><svg class="tooltip-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div class="tooltip-text">${c.details}</div></div></div></td><td class="text-sm text-gray-600">${c.guidance}</td><td><div class="flex items-center space-x-2"><input type="range" min="0" max="3" value="${c.score || 0}" class="score-slider w-full" data-id="${c.id}"><span class="font-bold text-purple-700 text-lg w-4 text-center">${c.score || 0}</span></div></td><td><textarea class="w-full p-2 border border-gray-300 rounded-md" rows="2" placeholder="Enter justification..." data-id="${c.id}">${c.notes || ''}</textarea></td>`;
+            tbody.appendChild(row);
+        });
+    }
+
+    function updateScore(criterionId, score) {
+        if (!currentScoringState.criteria) return;
+        const criterion = currentScoringState.criteria.find(c => c.id === criterionId);
+        if (criterion) {
+            criterion.score = score;
+            saveProgress();
+            updateTotalsAndOutcome();
+        }
+    }
+    
+    function updateNotes(criterionId, notes) {
+         if (!currentScoringState.criteria) return;
+        const criterion = currentScoringState.criteria.find(c => c.id === criterionId);
+        if (criterion) {
+            criterion.notes = notes;
+            saveProgress();
+        }
+    }
+
+    function updateTotalsAndOutcome() {
+        const totalEl = document.getElementById('scoring-total');
+        const outcomeEl = document.getElementById('scoring-outcome');
+        const threshold = parseInt(document.getElementById('scoring-threshold').value, 10) || 65;
+
+        if (!currentScoringState.criteria || currentScoringState.criteria.length === 0) {
+            totalEl.textContent = '0 / 100';
+            outcomeEl.textContent = 'N/A';
+            outcomeEl.className = 'px-4 py-1 text-lg font-bold text-white rounded-full bg-gray-400';
+            return;
+        }
+
+        const totalScore = currentScoringState.criteria.reduce((acc, c) => acc + ((c.score || 0) / 3) * c.weight, 0);
+        const finalScore = Math.round(totalScore);
+        totalEl.textContent = `${finalScore} / 100`;
+
+        if (finalScore >= threshold) {
+            outcomeEl.textContent = 'Green';
+            outcomeEl.className = 'px-4 py-1 text-lg font-bold text-white rounded-full bg-teal-500';
+        } else if (finalScore >= threshold * 0.7) {
+            outcomeEl.textContent = 'Amber';
+            outcomeEl.className = 'px-4 py-1 text-lg font-bold text-white rounded-full bg-yellow-500';
+        } else {
+            outcomeEl.textContent = 'Red';
+            outcomeEl.className = 'px-4 py-1 text-lg font-bold text-white rounded-full bg-red-500';
+        }
+    }
+    
+    async function saveProgress() {
+        if (currentScoringState.ref && currentUserProfile && !currentScoringState.isFinal) {
+            const docId = `${auth.currentUser.uid}_${currentScoringState.ref}`;
+            const docRef = doc(scoresCollectionRef, docId);
+            const dataToSave = {
+                ...currentScoringState,
+                scorerId: auth.currentUser.uid,
+                scorerName: currentUserProfile.name,
+                isFinal: false
+            };
+            try {
+                await setDoc(docRef, dataToSave, { merge: true });
+            } catch (error) {
+                console.error("Error saving progress:", error);
+            }
+        }
+    }
+
+    async function postFinalScores() {
+        if (!currentScoringState.ref || !currentUserProfile) {
+            showMessage('Please select an application first.', 'Action Required');
+            return;
+        }
+
+        showConfirmationModal(`Are you sure you want to post these scores as FINAL for ${currentScoringState.ref}? You will not be able to edit them after posting.`, async () => {
+            const docId = `${auth.currentUser.uid}_${currentScoringState.ref}`;
+            const docRef = doc(scoresCollectionRef, docId);
+            const totalScore = Math.round(currentScoringState.criteria.reduce((acc, c) => acc + ((c.score || 0) / 3) * c.weight, 0));
+            const finalScores = {
+                ...currentScoringState,
+                scorerId: auth.currentUser.uid,
+                scorerName: currentUserProfile.name,
+                totalScore,
+                isFinal: true,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(docRef, finalScores);
+                const statusEl = document.getElementById('scoring-status');
+                statusEl.textContent = `Final scores posted for ${currentScoringState.ref}!`;
+                setTimeout(() => statusEl.textContent = '', 3000);
+                loadScoresForRef(currentScoringState.ref);
+            } catch (error) {
+                console.error("Error posting final scores: ", error);
+                showMessage("Failed to post scores. See console for details.", "Error");
+            }
+        });
+    }
+
+    async function clearCurrentForm() {
+        const ref = document.getElementById('scoring-ref').value;
+        if (!ref || !currentUserProfile) {
+            showMessage("Please select an application first.", "Action Required");
+            return;
+        }
+        showConfirmationModal(`Are you sure you want to clear all scores and notes for ${ref}? This will be permanently deleted.`, async () => {
+            const docId = `${auth.currentUser.uid}_${ref}`;
+            const docRef = doc(scoresCollectionRef, docId);
+            try {
+                await deleteDoc(docRef);
+                handleAppSelection(ref); // Reload to show cleared form
+            } catch (error) {
+                console.error("Error clearing form: ", error);
+                showMessage("Failed to clear form. See console for details.", "Error");
+            }
+        });
+    }
+    
+    function exportMasterTrackerToCSV() {
+        if (currentUserProfile?.role !== 'admin') return;
+
+        getDocs(scoresCollectionRef).then(snapshot => {
+            const allScores = [];
+            snapshot.forEach(doc => allScores.push(doc.data()));
+            
+            if (allScores.length === 0) {
+                showMessage("No scores available to export.", "Info");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Scorer,Reference,Applicant,Area,Total Score,Is Final,Timestamp," + SCORING_DATA.CRITERIA_TEMPLATE.map(c => `"${c.name} Score","${c.name} Notes"`).join(',') + "\r\n";
+
+            allScores.forEach(score => {
+                const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === score.ref) || {};
+                let row = [
+                    `"${score.scorerName}"`,
+                    `"${score.ref}"`,
+                    `"${app.applicant || 'N/A'}"`,
+                    `"${app.area || 'N/A'}"`,
+                    score.totalScore || 0,
+                    score.isFinal,
+                    `"${score.timestamp || ''}"`
+                ];
+
+                SCORING_DATA.CRITERIA_TEMPLATE.forEach(template => {
+                    const criterion = score.criteria.find(c => c.id === template.id) || {};
+                    row.push(criterion.score ?? 0);
+                    row.push(`"${(criterion.notes || '').replace(/"/g, '""')}"`);
+                });
+
+                csvContent += row.join(',') + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "master_scores.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // Admin Score Editing Functions
+    function openScoreEditModal(docId) {
+        const docRef = doc(scoresCollectionRef, docId);
+        getDoc(docRef).then(docSnap => {
+            if (docSnap.exists()) {
+                currentEditScoreData = { id: docSnap.id, ...docSnap.data() };
+                const modalBody = document.getElementById('score-edit-modal-body');
+                const title = document.getElementById('score-edit-modal-title');
+                
+                const app = SCORING_DATA.APPLICATIONS.find(a => a.ref === currentEditScoreData.ref);
+                title.textContent = `Edit Score for ${app.applicant} by ${currentEditScoreData.scorerName}`;
+                document.getElementById('edit-score-doc-id').value = docId;
+
+                const criteriaHtml = currentEditScoreData.criteria.map(c => {
+                    const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === c.id) || {};
+                    return `
+                    <tr>
+                        <td class="font-bold text-gray-800 p-2">${template.name}</td>
+                        <td class="p-2"><div class="flex items-center space-x-2"><input type="range" min="0" max="3" value="${c.score || 0}" class="score-slider w-full" data-id="${c.id}"><span class="font-bold text-purple-700 text-lg w-4 text-center">${c.score || 0}</span></div></td>
+                        <td class="p-2"><textarea class="w-full p-2 border border-gray-300 rounded-md" rows="1" data-id="${c.id}">${c.notes || ''}</textarea></td>
+                    </tr>
+                    `;
+                }).join('');
+                
+                modalBody.innerHTML = `
+                    <table class="min-w-full">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="p-2">Criterion</th><th class="p-2" style="min-width: 150px;">Score</th><th class="p-2" style="min-width: 250px;">Notes</th></tr></thead>
+                        <tbody>${criteriaHtml}</tbody>
+                    </table>
+                `;
+
+                updateEditScoreTotals();
+                document.getElementById('score-edit-modal').classList.remove('hidden');
+            } else {
+                showMessage("Could not find the score to edit.", "Error");
+            }
+        });
+    }
+
+    function updateEditScoreTotals() {
+        const modalBody = document.getElementById('score-edit-modal-body');
+        const sliders = modalBody.querySelectorAll('input.score-slider');
+        
+        const criteriaForCalc = Array.from(sliders).map(slider => {
+            const id = slider.dataset.id;
+            const score = parseInt(slider.value, 10);
+            const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === id);
+            return { score, weight: template.weight };
+        });
+
+        const totalScore = criteriaForCalc.reduce((acc, c) => acc + ((c.score || 0) / 3) * c.weight, 0);
+        const finalScore = Math.round(totalScore);
+        document.getElementById('edit-scoring-total').textContent = `${finalScore} / 100`;
+    }
+
+    async function saveEditedScore() {
+        const docId = document.getElementById('edit-score-doc-id').value;
+        if (!docId) return;
+
+        const docRef = doc(scoresCollectionRef, docId);
+        const modalBody = document.getElementById('score-edit-modal-body');
+        const sliders = modalBody.querySelectorAll('input.score-slider');
+        const textareas = modalBody.querySelectorAll('textarea');
+
+        const newCriteria = Array.from(sliders).map(slider => {
+            const id = slider.dataset.id;
+            const score = parseInt(slider.value, 10);
+            const notes = Array.from(textareas).find(t => t.dataset.id === id).value;
+            return { id, score, notes };
+        });
+
+        const totalScore = Math.round(newCriteria.reduce((acc, c) => {
+            const template = SCORING_DATA.CRITERIA_TEMPLATE.find(t => t.id === c.id);
+            return acc + ((c.score || 0) / 3) * template.weight;
+        }, 0));
+
+        try {
+            await setDoc(docRef, { 
+                criteria: newCriteria, 
+                totalScore: totalScore 
+            }, { merge: true });
+            
+            closeScoreEditModal();
+            showMessage("Score updated successfully!", "Success");
+        } catch (error) {
+            console.error("Error updating score:", error);
+            showMessage("Failed to update score. See console for details.", "Error");
+        }
+    }
+
+    function closeScoreEditModal() {
+        document.getElementById('score-edit-modal').classList.add('hidden');
+    }
+
+    // ----------------
+    // INITIALIZATION
+    // ----------------
+    document.addEventListener('DOMContentLoaded', async () => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyD3GByINKnlJHCzUbZA8fWWazmx751EKAw",
+        authDomain: "communities-choice-portal.firebaseapp.com",
+        projectId: "communities-choice-portal",
+        storageBucket: "communities-choice-portal.appspot.com",
+        messagingSenderId: "77753238309",
+        appId: "1:77753238309:web:b7bc1381f9478ccbff90cc",
+        measurementId: "G-KMGCMW8840"
+      };
+
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      setLogLevel('debug');
+      
+      try {
+        await enableIndexedDbPersistence(db);
+      } catch (err) {
+        if (err.code == 'failed-precondition') {
+            console.warn("Firestore persistence failed, likely due to multiple open tabs.");
+        } else if (err.code == 'unimplemented') {
+            console.warn("Firestore persistence is not available in this browser.");
+        }
+      }
+
+      scoresCollectionRef = collection(db, 'scores'); 
+
+      onAuthStateChanged(auth, handleAuthState);
+      
+      makePdfViewerDraggable();
+      
+      // --- EVENT LISTENER SETUP ---
+      document.body.addEventListener('click', (e) => {
+          const target = e.target;
+          const portalPageTarget = target.closest('[data-portal-page]');
+          if (portalPageTarget) {
+              showPortalPage(portalPageTarget.dataset.portalPage);
+          }
+          if (target.closest('button[data-task-ref]')) {
+              loadTask(target.closest('button[data-task-ref]').dataset.taskRef);
+          }
+          if (target.closest('.delete-score-btn[data-delete-id]')) {
+              deleteScore(target.closest('.delete-score-btn').dataset.deleteId);
+          }
+          if (target.closest('.edit-score-btn[data-edit-id]')) {
+              openScoreEditModal(target.closest('.edit-score-btn').dataset.editId);
+          }
+      });
+      
+      document.getElementById('logout-button').addEventListener('click', logout);
+      document.getElementById('scoring-ref').addEventListener('change', (e) => handleAppSelection(e.target.value));
+      document.getElementById('scoring-applicant').addEventListener('change', (e) => handleAppSelection(e.target.value));
+      document.getElementById('scoring-threshold').addEventListener('input', updateTotalsAndOutcome);
+      document.getElementById('scoring-post-final').addEventListener('click', postFinalScores);
+      document.getElementById('scoring-export-csv').addEventListener('click', exportMasterTrackerToCSV);
+      document.getElementById('scoring-clear').addEventListener('click', clearCurrentForm);
+      document.getElementById('view-pdf-button').addEventListener('click', openPdfViewerForCurrentApp);
+
+      // PDF Viewer & Modals
+      document.getElementById('close-pdf-viewer-btn').addEventListener('click', closePdfViewer);
+      document.getElementById('open-guide-button').addEventListener('click', openGuideModal);
+      document.getElementById('close-guide-modal-btn').addEventListener('click', closeGuideModal);
+      document.getElementById('guide-modal').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeGuideModal() });
+      document.getElementById('confirmation-modal-cancel').addEventListener('click', hideConfirmationModal);
+      document.getElementById('confirmation-modal-confirm').addEventListener('click', handleConfirm);
+      
+      // Score Edit Modal
+      document.getElementById('close-score-edit-modal-btn').addEventListener('click', closeScoreEditModal);
+      document.getElementById('score-edit-modal-cancel').addEventListener('click', closeScoreEditModal);
+      document.getElementById('score-edit-modal-save').addEventListener('click', saveEditedScore);
+      document.getElementById('score-edit-modal-body').addEventListener('input', (e) => {
+          if (e.target.matches('input.score-slider')) {
+              e.target.nextElementSibling.textContent = e.target.value;
+              updateEditScoreTotals();
+          }
+      });
+      
+      // Scoring Matrix Inputs (Delegation)
+      const scoringBody = document.getElementById('scoring-matrix-body');
+      scoringBody.addEventListener('input', (e) => {
+          if (e.target.matches('input.score-slider[data-id]')) {
+              const id = e.target.dataset.id;
+              const score = parseInt(e.target.value, 10);
+              e.target.nextElementSibling.textContent = score;
+              updateScore(id, score);
+          }
+          if (e.target.matches('textarea[data-id]')) {
+              const id = e.target.dataset.id;
+              const notes = e.target.value;
+              updateNotes(id, notes);
+          }
+      });
+    });
+  </script>
+</body>
+</html>
